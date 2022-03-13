@@ -1,37 +1,22 @@
 import board
 import digitalio
 
-loraProfile = 2
-# 1 => Bw125Cr45Sf128
-# 2 => Bw500Cr45Sf128
-# 3 => Bw31_25Cr48Sf512
-# 4 => Bw125Cr48Sf4096
-# 5 => Bw125Cr45Sf2048
-# 6 => Bw31Cr48Sf4096
-
-# Bw125Cr45Sf128 = (0x72, 0x74, 0x04) #< Bw = 125 kHz, Cr = 4/5,
-#   Sf = 128chips/symbol, CRC on. Default medium range
-# Bw500Cr45Sf128 = (0x92, 0x74, 0x04) #< Bw = 500 kHz, Cr = 4/5,
-#   Sf = 128chips/symbol, CRC on. Fast+short range
-# Bw31_25Cr48Sf512 = (0x48, 0x94, 0x04) #< Bw = 31.25 kHz, Cr = 4/8,
-#   Sf = 512chips/symbol, CRC on. Slow+long range
-# Bw125Cr48Sf4096 = (0x78, 0xc4, 0x0c) #/< Bw = 125 kHz, Cr = 4/8,
-#   Sf = 4096chips/symbol, low data rate, CRC on. Slow+long range
-# Bw125Cr45Sf2048 = (0x72, 0xb4, 0x04) #< Bw = 125 kHz, Cr = 4/5,
-#   Sf = 2048chips/symbol, CRC on. Slow+long range
-# Bw31Cr48Sf4096 = (0x48, 0xc4, 0x04) #< Bw = 125 kHz, Cr = 4/5,
-#   Sf = 2048chips/symbol, CRC on. Slow+Extra long range
-
-
-unitName = "ARMACHAT01"
+unitName = "ARMACHAT"
 freq = 915.0
-spread = 10
 power = 23
-bandwidth = 41700
-codingRate = 8
 
+# Matches Mestastic values in table at
+# https://meshtastic.org/docs/settings/channel
+# 1 => Bw500Cr45Sf128       Short/Fast
+# 2 => Bw125Cr45Sf128       Short/Slow
+# 3 => Bw250Cr47Sf1024      Medium/Fast
+# 4 => Bw250Cr46Sf2048      Medium/Slow
+# 5 => Bw31_25Cr48Sf512     Long/Fast
+# 6 => Bw125Cr48Sf4096      Long/Slow
 
-myName = "RichT"
+loraProfile = 1
+
+myName = "DemoUser"
 
 myGroup3 = 0x03
 myGroup2 = 0x02
