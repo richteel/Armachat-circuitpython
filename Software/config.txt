@@ -1,0 +1,49 @@
+
+unitName = "ARMACHAT"
+freq = 915.0
+power = 10
+
+# Matches Mestastic values in table at
+# https://meshtastic.org/docs/settings/channel
+# 1 => Bw500Cr45Sf128       Short/Fast
+# 2 => Bw125Cr45Sf128       Short/Slow
+# 3 => Bw250Cr47Sf1024      Medium/Fast
+# 4 => Bw250Cr46Sf2048      Medium/Slow
+# 5 => Bw31_25Cr48Sf512     Long/Fast
+# 6 => Bw125Cr48Sf4096      Long/Slow
+
+loraProfile = 1
+
+myName = "RichT"
+
+myGroup3 = 19
+myGroup2 = 18
+myGroup1 = 17
+myID = 1
+
+dest3 = 3
+dest2 = 2
+dest1 = 1
+dest0 = 1
+
+msgId3 = 19
+msgId2 = 18
+msgId1 = 17
+msgId0 = 0
+
+hopLimit = 3
+
+password = "Sixteen byte key"
+passwordIv = "Sixteen byte key"
+bright = 1
+sleep = 0
+font = 2
+theme = 1
+
+volume = 6
+
+maxLines = 6
+maxChars = 26
+
+model = "compact"
+# model = "max"

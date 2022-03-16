@@ -19,20 +19,22 @@ loraProfile = 1
 
 myName = "DemoUser"
 
-myGroup3 = 0x03
-myGroup2 = 0x02
-myGroup1 = 0x01
+myGroup3 = 0x13
+myGroup2 = 0x12
+myGroup1 = 0x11
 myID = 1
 
-dest3 = 0x13
-dest2 = 0x12
-dest1 = 0x11
-dest0 = 0
+dest3 = 0x03
+dest2 = 0x02
+dest1 = 0x01
+dest0 = 1
 
 msgId3 = 0x13
 msgId2 = 0x12
 msgId1 = 0x11
 msgId0 = 0
+
+hopLimit = 3
 
 password = "Sixteen byte key"
 passwordIv = "Sixteen byte key"

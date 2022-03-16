@@ -189,25 +189,35 @@ def showMemory():
 
 def sendMessage(text):
     LED.value = True
-    # Header 16 bytes
-    header = [
+
+    dest = [
         config.dest3,
         config.dest2,
         config.dest1,
-        config.dest0,  # destination
-        config.myGroup3,
-        config.myGroup2,
-        config.myGroup1,
-        config.myID,  # sender
+        config.dest0
+    ]
+
+    msgID = [
         config.msgID3,
         config.msgID2,
         config.msgID1,
-        config.msgID0,  # messageID
-        0,
-        0,
-        0,
-        3,
-    ]  # Hop limit
+        config.msgID0
+    ]
+
+    # Header 16 bytes
+    header = dest + \
+        [
+            config.myGroup3,
+            config.myGroup2,
+            config.myGroup1,
+            config.myID
+        ] + msgID + \
+        [
+            0,
+            0,
+            0,
+            3,
+        ]  # Hop limit
 
     # random.randint(min, max)
     outp = bytearray(len(text))
@@ -218,7 +228,8 @@ def sendMessage(text):
     print(hexlify(bytearray(header)))
     print("Encrypted message:")
     print(hexlify(outp))
-    rfm9x.send(list(bytearray(header)) + list(outp), 0)  # (list(outp), 0)
+    # rfm9x.send(list(bytearray(header)) + list(outp), 0)  # (list(outp), 0)
+    rfm9x.send(dest, outp, message_id=msgID)  # (list(outp), 0)
 
     destination = hexlify(bytes(header[0:4]))
     sender = hexlify(bytes(header[4:8]))
@@ -271,7 +282,7 @@ def receiveMessage():
     # If no packet was received during the timeout then None is returned.
 
     if packet is not None:
-        print("packet -> ")
+        print("packet -> ", packet)
         print(packet)
         header = packet[0:16]
         print("Received header:")
@@ -630,12 +641,23 @@ def loraProfileSetup(profile):
 def radioInit():
     global rfm9x
 
+    myAddress = [
+        config.myGroup3,
+        config.myGroup2,
+        config.myGroup1,
+        config.myID
+    ]
+
+    print("myAddress -> ", myAddress)
+
     try:
         rfm9x = ulora.LoRa(
-            spi, CS, freq=config.freq, modem_config=modemPreset, tx_power=config.power
+            spi, CS, freq=config.freq, modem_config=modemPreset,
+            tx_power=config.power, this_address=myAddress, hop_limit=config.hopLimit
         )  # , interrupt=28
-    except Exception:
+    except Exception as e:
         print("Lora module not detected !!!")  # None
+        print(e)
 
 
 # ----------------------FUNCTIONS---------------------------
@@ -798,6 +820,8 @@ while True:
         continue
     if keys[0] == "n":
         text = editor(text="")
+        # Most likely there is a max length on the length of text/data
+        # that may be sent. Once determined, change code to send chuncks/packets
         if not text == "":
             ring()
             config.msgID3 = random.randint(0, 255)
@@ -807,6 +831,8 @@ while True:
             sendMessage(text)
             message = receiveMessage()
             msgCounter += 1
+            if(msgCounter > 255):
+                msgCounter = 0
     if keys[0] == "m":
         showMemory()
         ring()
