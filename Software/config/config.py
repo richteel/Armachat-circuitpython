@@ -19,11 +19,6 @@ loraProfile = 1
 
 myName = "DemoUser"
 
-myGroup3 = 0x13
-myGroup2 = 0x12
-myGroup1 = 0x11
-myID = 1
-
 dest3 = 0x03
 dest2 = 0x02
 dest1 = 0x01
@@ -33,6 +28,10 @@ msgId3 = 0x13
 msgId2 = 0x12
 msgId1 = 0x11
 msgId0 = 0
+
+myAddress = "12-36-124-33"
+groupMask = "255-255-255-0"
+destinations = "Test 1|12-36-124-8|Test 2|12-36-124-17|Test 3|12-36-124-3"
 
 hopLimit = 3
 

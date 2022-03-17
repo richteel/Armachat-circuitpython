@@ -8,6 +8,8 @@ import digitalio
 
 import adafruit_bus_device.spi_device as spidev
 
+import armachat_address
+
 #Constants
 FLAGS_ACK = 0x80
 BROADCAST_ADDRESS = 255
@@ -64,7 +66,7 @@ class ModemConfig():
     Bw125Cr45Sf2048 = (0x72, 0xb4, 0x04) #< Bw = 125 kHz, Cr = 4/5, Sf = 2048chips/symbol, CRC on. Slow+long range
 
 class LoRa(object):
-    def __init__(self, spi, CS, this_address=0, freq=868.0, tx_power=14,
+    def __init__(self, spi, CS, this_address="0-0-0-0", group_mask="255-255-255-0", hop_limit=3, freq=868.0, tx_power=14,
                  modem_config=ModemConfig.Bw125Cr45Sf128, receive_all=False, acks=False, crypto=None):
         """
         Lora(channel, interrupt, this_address, cs_pin, reset_pin=None, freq=868.0, tx_power=14,
@@ -92,7 +94,9 @@ class LoRa(object):
 
         self.last_rssi = None
         self.last_snr = None
-        self._this_address = this_address
+        self._this_address = armachat_address.addressToList(this_address)
+        self._group_mask = armachat_address.addressToList(group_mask)
+        self._hop_limit = hop_limit
         self._last_header_id = 0
 
         self._last_payload = None
@@ -102,6 +106,24 @@ class LoRa(object):
         self.send_retries = 2
         self.wait_packet_sent_timeout = 20.0
         self.retry_timeout = 0.2
+
+        self.message_count = 0
+
+        # check if modem_config is set to 3 bytes
+        assert len(self._modem_config) == 3, \
+            "LoRa initialization failed - invalid modem_config"
+
+        # check if this_address is set to 4 bytes
+        assert len(self._this_address) == 4, \
+            "LoRa initialization failed - invalid this_address"
+
+        # check if group_mask is set to 4 bytes
+        assert len(self._group_mask) == 4, \
+            "LoRa initialization failed - invalid group_mask"
+
+        # check if hop_limit is set to 4 bytes
+        assert self._hop_limit < 256, \
+            "LoRa initialization failed - invalid hop_limit"
 
         # Setup the module
 #        gpio_interrupt = Pin(self._interrupt, Pin.IN, Pin.PULL_DOWN)
@@ -234,10 +256,33 @@ class LoRa(object):
             self._spi_write(REG_01_OP_MODE, MODE_STDBY)
             self._mode = MODE_STDBY
 
-    def send(self, data, header_to, header_id=0, header_flags=0):
+    def send(self, to, data, msgId=""):
+        to_address = armachat_address.addressToList(to)
+
+        # check if this_address is set to 4 bytes
+        assert len(to_address) == 4, \
+            "LoRa send failed - invalid to_address"
+
+        # If the message_id was not passed, generate one
+        if len(msgId) == 0:
+            msgId = armachat_address.getMessageId(self.message_count)
+            self.message_count += 1
+            if(self.message_count > 255):
+                self.message_count = 0
+
+        message_id = armachat_address.addressToList(msgId)
+
+        # check if message_id is set to 4 bytes
+        assert len(message_id) == 4, \
+            "LoRa send failed - invalid message_id"
+
         self.set_mode_idle()
 
-        header = [header_to, self._this_address, header_id, header_flags]
+        header = to_address + self._this_address + message_id + [0, 0, 0, self._hop_limit]
+
+        print("header -> ", header)
+        # header ->  [3, 2, 1, 1, 19, 18, 17, 1, 115, 89, 117, 0, 0, 0, 0, 3]
+
         if type(data) == int:
             data = [data]
         elif type(data) == bytes:
@@ -245,7 +290,14 @@ class LoRa(object):
         elif type(data) == str:
             data = [ord(s) for s in data]
 
+        print("header -> ", header)
+        print("type(header) -> ", type(header))
+        print("data -> ", data)
+        print("type(data) -> ", type(data))
+        # payload = bytes(header) + data
         payload = header + data
+        print("payload -> ", payload)
+        # payload ->  [0, 0, 0, 0, 19, 18, 17, 0, 3, 2, 1, 1, 115, 111, 198, 0, 0, 0, 0, 3, 92, 251, 53, 153, 252, 1, 7, 13, 97, 59]
         self._spi_write(REG_0D_FIFO_ADDR_PTR, 0)
         self._spi_write(REG_00_FIFO, payload)
         self._spi_write(REG_22_PAYLOAD_LENGTH, len(payload))
@@ -382,3 +434,9 @@ class LoRa(object):
         #self.set_mode_idle()
         self._spi_write(REG_12_IRQ_FLAGS, 0xff)
         return message
+
+
+
+
+
+

@@ -9,7 +9,7 @@ import analogio
 import gc
 import os
 import aesio
-import random
+# import random
 from binascii import hexlify
 import microcontroller
 from adafruit_simple_text_display import SimpleTextDisplay
@@ -26,7 +26,10 @@ from config import config
 import digitalio
 
 # import adafruit_rfm9x
-import ulora
+# import ulora
+import armachat_lora
+
+import armachat_address
 
 FREQ_LIST = [169.0, 434.0, 868.0, 915.0]
 
@@ -187,72 +190,40 @@ def showMemory():
                 screen[8].text = "ALT-Ex Ent> Del< SPC-Detail"
 
 
-def sendMessage(text):
+def sendMessage(text, messageID):
     LED.value = True
 
-    dest = [
-        config.dest3,
-        config.dest2,
-        config.dest1,
-        config.dest0
-    ]
-
-    msgID = [
-        config.msgID3,
-        config.msgID2,
-        config.msgID1,
-        config.msgID0
-    ]
-
-    # Header 16 bytes
-    header = dest + \
-        [
-            config.myGroup3,
-            config.myGroup2,
-            config.myGroup1,
-            config.myID
-        ] + msgID + \
-        [
-            0,
-            0,
-            0,
-            3,
-        ]  # Hop limit
-
-    # random.randint(min, max)
+    destination = address_book[to_dest_idx]["address"]
     outp = bytearray(len(text))
     cipher = aesio.AES(bytes(config.password, "utf-8"),
                        aesio.MODE_CTR, bytes(config.passwordIv, "utf-8"))
     cipher.encrypt_into(bytes(text, "utf-8"), outp)
-    print("Send header:")
-    print(hexlify(bytearray(header)))
+    # print("Send header:")
+    # print(hexlify(bytearray(header)))
     print("Encrypted message:")
     print(hexlify(outp))
     # rfm9x.send(list(bytearray(header)) + list(outp), 0)  # (list(outp), 0)
-    rfm9x.send(dest, outp, message_id=msgID)  # (list(outp), 0)
+    rfm9x.send(destination, outp, msgId=messageID)  # (list(outp), 0)
 
-    destination = hexlify(bytes(header[0:4]))
-    sender = hexlify(bytes(header[4:8]))
-    messageID = hexlify(bytes(header[8:12]))
-    hop = hexlify(bytes(header[12:16]))
     timeStamp = str(time.monotonic())
     # print(sender)
     # print(hop)
     print("Save to message memory:")
-    storedMsg = str(
-        destination
-        + "|"
-        + sender
-        + "|"
-        + messageID
-        + "|"
-        + hop
-        + "|S|n/a|n/a|"
-        + timeStamp
-        + "|"
-        + text,
-        "utf-8",
-    )
+    print("text -> ", text)
+    print("type(text) -> ", type(text))
+    storedMsg = str(destination
+                    + "|"
+                    + config.myAddress
+                    + "|"
+                    + messageID
+                    + "|"
+                    + str(rfm9x._hop_limit)
+                    + "|S|n/a|n/a|"
+                    + timeStamp  # str
+                    + "|"
+                    + text,  # str
+                    "utf-8",
+                    )
     print(storedMsg)
     messages.append(storedMsg)
     LED.value = False
@@ -357,10 +328,31 @@ def receiveMessage():
         # confirmation
         LED.value = True
         # Create response header = swap destination<>sender + same message ID
+        # Sender (4:8), Destination (0:4), MessageID (8:12), HopLimit(12:16)
         header = packet[4:8] + packet[0:4] + packet[8:12] + packet[12:16]
         print("Response header ...")
         print(hexlify(header))
-        rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
+        # rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
+        # rfm9x.send(destination, outp, msgId=messageID)
+
+        dd = armachat_address.addressLst2Str(packet[4:8])
+        oo = "!"
+        mm = armachat_address.addressLst2Str(packet[12:16])
+
+        print()
+        print("dd -> ", dd)
+        print("type(dd) -> ", type(dd))
+        print()
+        print("oo -> ", oo)
+        print("type(oo) -> ", type(oo))
+        print()
+        print("mm -> ", mm)
+        print("type(mm) -> ", type(mm))
+
+        rfm9x.send(dd, oo, msgId=mm)
+
+
+
         print("Confirmation send ...")
         LED.value = False
     return packet_text
@@ -641,19 +633,13 @@ def loraProfileSetup(profile):
 def radioInit():
     global rfm9x
 
-    myAddress = [
-        config.myGroup3,
-        config.myGroup2,
-        config.myGroup1,
-        config.myID
-    ]
-
-    print("myAddress -> ", myAddress)
+    # print("myAddress -> ", myAddress)
 
     try:
-        rfm9x = ulora.LoRa(
+        rfm9x = armachat_lora.LoRa(
             spi, CS, freq=config.freq, modem_config=modemPreset,
-            tx_power=config.power, this_address=myAddress, hop_limit=config.hopLimit
+            tx_power=config.power, this_address=config.myAddress,
+            hop_limit=config.hopLimit
         )  # , interrupt=28
     except Exception as e:
         print("Lora module not detected !!!")  # None
@@ -776,13 +762,35 @@ screen = SimpleTextDisplay(
     ),
 )
 
+def loadAddressBook():
+    broadcastAddress = armachat_address.broadcastAddressString(config.myAddress,
+                                                               config.groupMask)
+    # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
+    parts = config.destinations.split("|")
+    retVal = [{"name": "All", "address": broadcastAddress}]
+
+    if len(parts) % 2 != 0:
+        return retVal
+
+    for i in range(0, len(parts), 2):
+        retVal += [{"name": parts[i], "address": parts[i+1]}]
+
+    return retVal
+
+
 print("Screen ready,Free memory:")
 print(gc.mem_free())
 
+to_dest_idx = 0
+address_book = loadAddressBook()
+
+print("address_book -> ", address_book)
+
 while True:
-    screen[0].text = ">(" + str(config.myID) + ")" + config.myName
+    screen[0].text = ">(" + str(config.myAddress) + ")" + config.myName
     screen[1].text = "[N] New message"
-    screen[2].text = "To:(" + str(config.dest0) + ")"
+    screen[2].text = "[D] To:(" + address_book[to_dest_idx]["address"] + ")" \
+        + address_book[to_dest_idx]["name"]
     screen[3].text = "[M] Memory - ALL:" + str(countMessages(""))
     screen[4].text = (
         "New:" + str(countMessages("|N|")) + " Undelivered:" + str(countMessages("|S|"))
@@ -824,15 +832,15 @@ while True:
         # that may be sent. Once determined, change code to send chuncks/packets
         if not text == "":
             ring()
-            config.msgID3 = random.randint(0, 255)
-            config.msgID2 = random.randint(0, 255)
-            config.msgID1 = random.randint(0, 255)
-            config.msgID0 = msgCounter  # messageID
-            sendMessage(text)
+            sendMessage(text, armachat_address.getMessageId(msgCounter))
             message = receiveMessage()
             msgCounter += 1
             if(msgCounter > 255):
                 msgCounter = 0
+    if keys[0] == "d":
+        to_dest_idx += 1
+        if to_dest_idx > len(address_book)-1:
+            to_dest_idx = 0
     if keys[0] == "m":
         showMemory()
         ring()
@@ -904,10 +912,8 @@ while True:
             text = text + line[r] + "|"
         print("text: " + text)
         ring()
-        config.msgID3 = random.randint(0, 255)
-        config.msgID2 = random.randint(0, 255)
-        config.msgID1 = random.randint(0, 255)
-        config.msgID0 = msgCounter  # messageID
-        sendMessage(text)
+        sendMessage(text, armachat_address.getMessageId(msgCounter))
         message = receiveMessage()
         msgCounter += 1
+        if msgCounter > 255:
+            msgCounter = 0
