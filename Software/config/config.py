@@ -19,19 +19,12 @@ loraProfile = 1
 
 myName = "DemoUser"
 
-dest3 = 0x03
-dest2 = 0x02
-dest1 = 0x01
-dest0 = 1
-
-msgId3 = 0x13
-msgId2 = 0x12
-msgId1 = 0x11
-msgId0 = 0
-
-myAddress = "12-36-124-33"
+myAddress = "12-36-124-3"
+# myAddress = "19-18-17-1"
+# myAddress = "0-0-0-1"
 groupMask = "255-255-255-0"
-destinations = "Test 1|12-36-124-8|Test 2|12-36-124-17|Test 3|12-36-124-3"
+# destinations = "Test 1|12-36-124-8|Test 2|12-36-124-17|Test 3|12-36-124-3"
+destinations = "Test 1|1-1-1-1|Test 2|3-2-1-1|Test 3|12-36-124-33"
 
 hopLimit = 3
 

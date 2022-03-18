@@ -2,29 +2,8 @@ import re
 import random
 
 
-def addressToBytes(address, length=4):
-    assert isinstance(address, str), \
-        "ERROR: Address is not a string"
-
-    try:
-        q = addressToList(address)
-
-        b = bytes(q)
-
-        if b is not None and len(b) == length:
-            return b
-        else:
-            # raise ValueError("ERROR in addressToBytes:
-            #   Invalid address - Expected " + length + " bytes -> ", address)
-            return None
-    except ValueError:
-        # raise ValueError("ERROR in addressToBytes:
-        #   Invalid address - Invalid character -> ", address)
-        return None
-
 def addressToList(address, length=4):
-    assert isinstance(address, str), \
-        "ERROR: Address is not a string"
+    assert isinstance(address, str), "ERROR: addressToList - Address is not a string"
 
     try:
         regX = re.compile(",|\.|-|_|:|;")
@@ -47,7 +26,15 @@ def addressToList(address, length=4):
         #   Invalid address - Invalid character -> ", address)
         return None
 
+
 def addressLst2Str(address):
+    if isinstance(address, bytes) or isinstance(address, bytearray):
+        address = list(address)
+
+    if not isinstance(address, list):
+        print("addressLst2Str: type(address) ->", type(address))
+
+    assert isinstance(address, list), "ERROR: addressLst2Str - Address is not a list"
 
     if len(address) != 4:
         return None
@@ -55,60 +42,106 @@ def addressLst2Str(address):
     retVal = ""
 
     for n in address:
+        if n < 0 or n > 255:
+            return None
+
         if len(retVal) > 0:
             retVal += "-"
-
-        print("retVal -> ", retVal)
 
         retVal += str(n)
 
     return retVal
 
-def broadcastAddressBytes(address, mask="255-255-255-0"):
-    assert isinstance(address, str), \
-        "ERROR: Address is not a string"
-
-    a = addressToBytes(address)
-    m = addressToBytes(mask)
-
-    c = (int.from_bytes(a, 'big') &
-         int.from_bytes(m, 'big')).to_bytes(max(len(a), len(m)), 'big')
-
-    i = (~int.from_bytes(m, 'big', False) & 255).to_bytes(len(m), 'big')
-
-    r = (int.from_bytes(c, 'big') |
-         int.from_bytes(i, 'big')).to_bytes(max(len(c), len(i)), 'big')
-
-    return r
 
 def broadcastAddressList(address, mask="255-255-255-0"):
-    assert isinstance(address, str), \
-        "ERROR: Address is not a string"
+    assert isinstance(
+        address, str
+    ), "ERROR: broadcastAddressList - Address is not a string"
 
-    b = broadcastAddressBytes(address, mask)
+    # b = broadcastAddressBytes(address, mask)
+    addrLst = addressToList(address)
+    maskLst = addressToList(mask)
+    retVal = []
 
-    return [int(x) for x in b]
+    if addrLst is None or maskLst is None or len(addrLst) != 4 or len(maskLst) != 4:
+        return None
 
-def broadcastAddressString(address, mask="255-255-255-0"):
-    assert isinstance(address, str), \
-        "ERROR: Address is not a string"
+    for i in range(0, 4):
+        a = addrLst[i]
+        m = maskLst[i]
+        retVal += [a | ~m & 255]
 
-    s = ""
+    return retVal
 
-    for n in broadcastAddressList(address, mask):
-        if len(s) > 0:
-            s += "-"
-
-        s += str(n)
-
-    return s
 
 def getMessageId(msgCount=0):
-    return (str(random.randint(0, 255)) +
-            "-" + str(random.randint(0, 255)) +
-            "-" + str(random.randint(0, 255)) +
-            "-" + str(msgCount)
-            )
+    assert isinstance(msgCount, int), "ERROR: getMessageId - msgCount is not an int"
+
+    assert (
+        msgCount >= 0 and msgCount < 256
+    ), "ERROR: getMessageId - Address is not between 0 and 255"
+
+    return (
+        str(random.randint(0, 255))
+        + "-"
+        + str(random.randint(0, 255))
+        + "-"
+        + str(random.randint(0, 255))
+        + "-"
+        + str(msgCount)
+    )
 
 
+def _unitTests():
+    assert (
+        addressToList("128-2-76-4") is not None
+    ), 'ERROR: Test Failed - addressToList("128-2-76-4") returned None'
 
+    assert (
+        addressToList("128-2-76-400") is None
+    ), 'ERROR: Test Failed - addressToList("128-2-76-400") did not return None'
+
+    assert (
+        addressToList("128-2-f0-4") is None
+    ), 'ERROR: Test Failed - addressToList("128-2-f0-4") did not return None'
+
+    assert addressToList("128-2-76-4") == [
+        128,
+        2,
+        76,
+        4,
+    ], 'ERROR: Test Failed - addressToList("128-2-76-4") returned incorrect value'
+
+    assert (
+        addressLst2Str([64, 12, 88, 5]) is not None
+    ), "ERROR: Test Failed - addressLst2Str([64, 12, 88, 5]) returned None"
+
+    assert (
+        addressLst2Str([64, 12, 88, 500]) is None
+    ), "ERROR: Test Failed - addressLst2Str([64, 12, 88, 500]) did not return None"
+
+    assert (
+        addressLst2Str([64, 12, 88, 5]) == "64-12-88-5"
+    ), "ERROR: Test Failed - addressLst2Str([64, 12, 88, 5]) returned incorrect value"
+
+    assert broadcastAddressList("128-2-76-4") == [
+        128,
+        2,
+        76,
+        255,
+    ], 'ERROR: Test Failed - broadcastAddressList("128-2-76-255") returned incorrect value'
+
+    assert (
+        broadcastAddressList("128-2-76-400") is None
+    ), 'ERROR: Test Failed - broadcastAddressList("128-2-76-400") did not return None'
+
+    assert (
+        getMessageId() is not None
+    ), "ERROR: Test Failed - getMessageId() returned None"
+
+    assert (
+        getMessageId(12)[-3:] == "-12"
+    ), "ERROR: Test Failed - getMessageId(12) returned None"
+
+
+_unitTests()

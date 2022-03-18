@@ -230,131 +230,127 @@ def sendMessage(text, messageID):
 
 
 def receiveMessage():
-    packet = rfm9x.receive(timeout=0.1)
-    packet_text = ""
-    header = [
-        0,
-        0,
-        0,
-        0,  # destination
-        0,
-        0,
-        0,
-        0,  # sender
-        0,
-        0,
-        0,
-        0,  # messageID
-        0,
-        0,
-        0,
-        3,
-    ]  # Hop limit
+    message = rfm9x.receive(timeout=0.1)
+
     # If no packet was received during the timeout then None is returned.
+    if message is None:
+        return None
 
-    if packet is not None:
-        print("packet -> ", packet)
-        print(packet)
-        header = packet[0:16]
-        print("Received header:")
-        print("header -> ")
-        print(hexlify(header))
-        if len(packet) > 16 and packet[16] == 33:  # 33 = sybol !
-            #                                        it is delivery confirmation
-            print("Delivery comfirmation")
-            changeMessageStatus(
-                msgID=str(hexlify(packet[8:12]), "utf-8"), old="|S|", new="|D|"
-            )
-            # do something to mark message is delivered
-            packet_text = "D"
-            return packet_text
-        # Decrypt
-        cipher = aesio.AES(bytes(config.password, "utf-8"),
-                           aesio.MODE_CTR, bytes(config.passwordIv, "utf-8"))
-        inp = bytes(packet[16:])
-        outp = bytearray(len(inp))
-        cipher.encrypt_into(inp, outp)
-        print("Received encrypted message:")
-        print(hexlify(inp))
-        try:
-            packet_text = str(outp, "utf-8")
-        except UnicodeError:
-            print("error")  # None
-            packet_text = ""
-            return packet_text
-        print("Decoded message:")
-        print(packet_text)
-        rssi = str(rfm9x.last_rssi)
-        snr = str(rfm9x.last_snr)
-        destination = hexlify(packet[0:4])
-        sender = hexlify(packet[4:8])
-        messageID = hexlify(packet[8:12])
-        hop = hexlify(packet[12:16])
-        timeStamp = str(time.monotonic())
-        print(sender)
-        print(hop)
-        storedMsg = str(
-            destination
-            + "|"
-            + sender
-            + "|"
-            + messageID
-            + "|"
-            + hop
-            + "|N|"
-            + rssi
-            + "|"
-            + snr
-            + "|"
-            + timeStamp
-            + "|"
-            + packet_text,
-            "utf-8",
+    # Check values
+    if message["to"] is None or message["from"] is None or message["id"] is None or \
+            message["flags"] is None:
+        print("ERROR: receiveMessage - to, from, id, or flags is None")
+        return None
+    if len(message["to"]) != 4:
+        print("ERROR: receiveMessage - 'to' incorrect length -> ",
+              len(message["to"]))
+        return None
+    if len(message["from"]) != 4:
+        print("ERROR: receiveMessage - 'from' incorrect length -> ",
+              len(message["from"]))
+        return None
+    if len(message["id"]) != 4:
+        print("ERROR: receiveMessage - 'id' incorrect length -> ",
+              len(message["id"]))
+        return None
+    if len(message["flags"]) != 4:
+        print("ERROR: receiveMessage - 'flags' incorrect length -> ",
+              len(message["flags"]))
+        return None
+
+    # Received delivery confirmation
+    if message["flags"][2] == 33:  # 33 = symbol ! it is delivery confirmation
+        print("Delivery comfirmation")
+        print("hexlify(message[\"id\"])", str(hexlify(message["id"]), "utf-8"))
+        changeMessageStatus(
+            msgID=str(hexlify(message["id"]), "utf-8"), old="|S|", new="|D|"
         )
+        # do something to mark message is delivered
+        packet_text = "D"
+        return packet_text
 
+    # One last check to see if we may continue
+    if message["data"] is None:
+        print("ERROR: receiveMessage - data is None")
+        return None
+
+    # Decrypt
+    cipher = aesio.AES(bytes(config.password, "utf-8"),
+                       aesio.MODE_CTR, bytes(config.passwordIv, "utf-8"))
+    inp = bytes(message["data"])
+    outp = bytearray(len(inp))
+    cipher.encrypt_into(inp, outp)
+    print("Received encrypted message:")
+    print(hexlify(inp))
+    try:
+        packet_text = str(outp, "utf-8")
+    except UnicodeError:
+        print("ERROR: receiveMessage - cannot decode message")
+        packet_text = ""
+        return packet_text
+    print("Decoded message:")
+    print(packet_text)
+
+    rssi = str(rfm9x.last_rssi)
+    snr = str(rfm9x.last_snr)
+    destination = armachat_address.addressLst2Str(message["to"])
+    sender = armachat_address.addressLst2Str(message["from"])
+    messageID = str(hexlify(message["id"]))
+    hop = str(message["flags"][3])
+    timeStamp = str(time.monotonic())
+
+    print("destination -> ", destination)
+    print("sender -> ", sender)
+    print("messageID -> ", messageID)
+    print("hop -> ", hop)
+    print("timeStamp -> ", timeStamp)
+
+    storedMsg = str(
+        destination
+        + "|"
+        + sender
+        + "|"
+        + messageID
+        + "|"
+        + hop
+        + "|N|"
+        + rssi
+        + "|"
+        + snr
+        + "|"
+        + timeStamp
+        + "|"
+        + packet_text,
+        "utf-8"
+    )
+
+    msgPart = storedMsg.split("|")
+
+    while len(msgPart) < 16:
+        storedMsg = storedMsg + "|"
         msgPart = storedMsg.split("|")
+    print("SNR:" + snr + " RSSI:" + rssi)
 
-        while len(msgPart) < 16:
-            storedMsg = storedMsg + "|"
-            msgPart = storedMsg.split("|")
-        # print("RSSI:{:.1f}".format(rssi))
-        print("SNR:" + snr + " RSSI:" + rssi)
-        # HEADER
-        # destination sender messageid hop time rssi snr R/S/D
+    print(storedMsg)
+    messages.append(storedMsg)
 
-        print(storedMsg)
-        messages.append(storedMsg)
+    # confirmation
+    LED.value = True
+    # Set confirmation flag
+    message["flags"][2] = 33  # 33 = symbol ! it is delivery confirmation
 
-        # confirmation
-        LED.value = True
-        # Create response header = swap destination<>sender + same message ID
-        # Sender (4:8), Destination (0:4), MessageID (8:12), HopLimit(12:16)
-        header = packet[4:8] + packet[0:4] + packet[8:12] + packet[12:16]
-        print("Response header ...")
-        print(hexlify(header))
-        # rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
-        # rfm9x.send(destination, outp, msgId=messageID)
+    # Create response header = swap destination<>sender + same message ID
+    # Sender (4:8), Destination (0:4), MessageID (8:12), HopLimit(12:16)
+    header = message["from"] + message["to"] + message["id"] + message["flags"]
+    print("Response header ...")
+    print(hexlify(header))
+    mId = armachat_address.addressLst2Str(message["id"])
+    # rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
+    rfm9x.send(sender, (list("Confirmation")), mId,
+               flags=message["flags"])
 
-        dd = armachat_address.addressLst2Str(packet[4:8])
-        oo = "!"
-        mm = armachat_address.addressLst2Str(packet[12:16])
-
-        print()
-        print("dd -> ", dd)
-        print("type(dd) -> ", type(dd))
-        print()
-        print("oo -> ", oo)
-        print("type(oo) -> ", type(oo))
-        print()
-        print("mm -> ", mm)
-        print("type(mm) -> ", type(mm))
-
-        rfm9x.send(dd, oo, msgId=mm)
-
-
-
-        print("Confirmation send ...")
-        LED.value = False
+    print("Confirmation send ...")
+    LED.value = False
     return packet_text
 
 
@@ -645,6 +641,21 @@ def radioInit():
         print("Lora module not detected !!!")  # None
         print(e)
 
+def loadAddressBook():
+    broadcastAddressList = armachat_address.broadcastAddressList(config.myAddress,
+                                                                 config.groupMask)
+    broadcastAddress = armachat_address.addressLst2Str(broadcastAddressList)
+    # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
+    parts = config.destinations.split("|")
+    retVal = [{"name": "All", "address": broadcastAddress}]
+
+    if len(parts) % 2 != 0:
+        return retVal
+
+    for i in range(0, len(parts), 2):
+        retVal += [{"name": parts[i], "address": parts[i+1]}]
+
+    return retVal
 
 # ----------------------FUNCTIONS---------------------------
 
@@ -762,21 +773,6 @@ screen = SimpleTextDisplay(
     ),
 )
 
-def loadAddressBook():
-    broadcastAddress = armachat_address.broadcastAddressString(config.myAddress,
-                                                               config.groupMask)
-    # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
-    parts = config.destinations.split("|")
-    retVal = [{"name": "All", "address": broadcastAddress}]
-
-    if len(parts) % 2 != 0:
-        return retVal
-
-    for i in range(0, len(parts), 2):
-        retVal += [{"name": parts[i], "address": parts[i+1]}]
-
-    return retVal
-
 
 print("Screen ready,Free memory:")
 print(gc.mem_free())
@@ -785,6 +781,12 @@ to_dest_idx = 0
 address_book = loadAddressBook()
 
 print("address_book -> ", address_book)
+
+broadcastAddressList = armachat_address.broadcastAddressList(config.myAddress,
+                                                             config.groupMask)
+broadcastAddress = \
+    armachat_address.addressLst2Str(armachat_address.broadcastAddressList
+                                    (config.myAddress, config.groupMask))
 
 while True:
     screen[0].text = ">(" + str(config.myAddress) + ")" + config.myName
