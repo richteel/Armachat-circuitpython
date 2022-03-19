@@ -73,14 +73,15 @@ else:
     print("No option for WRITE from code")
 
 LED.value = False
-for x in range(16):
+LOOPCOUNT = 32
+for x in range(LOOPCOUNT):
     s = "["
-    for i in range(0, 16):
-        if 15 - i > x:
+    for i in range(0, LOOPCOUNT):
+        if (LOOPCOUNT - 1) - i > x:
             s = s + "-"
         else:
             s = s + " "
-    if x == 15:
+    if x == LOOPCOUNT - 1:
         print(s + "]\n")
     else:
         print(s + "]\r", end='')

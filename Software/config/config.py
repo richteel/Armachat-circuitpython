@@ -23,10 +23,27 @@ myAddress = "12-36-124-3"
 # myAddress = "19-18-17-1"
 # myAddress = "0-0-0-1"
 groupMask = "255-255-255-0"
-# destinations = "Test 1|12-36-124-8|Test 2|12-36-124-17|Test 3|12-36-124-3"
-destinations = "Test 1|1-1-1-1|Test 2|3-2-1-1|Test 3|12-36-124-33"
+destinations = "Test 1|12-36-124-1|Test 2|12-36-124-2|Test 3|12-36-124-3"
+# destinations = "Test 1|1-1-1-1|Test 2|3-2-1-1|Test 3|12-36-124-33"
 
 hopLimit = 3
+
+# START: Remove these later
+myGroup3 = 0x03
+myGroup2 = 0x02
+myGroup1 = 0x01
+myID = 1
+
+dest3 = 0x13
+dest2 = 0x12
+dest1 = 0x11
+dest0 = 0
+
+msgId3 = 0x13
+msgId2 = 0x12
+msgId1 = 0x11
+msgId0 = 0
+# END: Remove these later
 
 password = "Sixteen byte key"
 passwordIv = "Sixteen byte key"
