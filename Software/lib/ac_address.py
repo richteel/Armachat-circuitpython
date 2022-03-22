@@ -51,6 +51,16 @@ def addressToList(address, length=4):
         #   Invalid address - Invalid character -> ", address)
         return None
 
+def broadcastAddressList_List(address, mask=[255, 255, 255, 0]):
+    assert isinstance(
+        address, list
+    ), "ERROR: broadcastAddressList - Address is not a list"
+
+    addrStr = addressLst2Str(address)
+    maskStr = addressLst2Str(mask)
+
+    return broadcastAddressList(addrStr, maskStr)
+
 
 def broadcastAddressList(address, mask="255-255-255-0"):
     assert isinstance(
@@ -110,7 +120,8 @@ def _unitTests():
         2,
         76,
         255,
-    ], 'ERROR: Test Failed - broadcastAddressList("128-2-76-255") returned incorrect value'
+    ], 'ERROR: Test Failed - broadcastAddressList("128-2-76-255") " + \
+       "returned incorrect value'
 
     assert (
         broadcastAddressList("128-2-76-400") is None

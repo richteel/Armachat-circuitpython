@@ -20,6 +20,7 @@ import digitalio
 import random
 import ac_lora
 import ac_address
+import ac_log
 
 FREQ_LIST = [169.0, 434.0, 868.0, 915.0]
 
@@ -31,12 +32,7 @@ messages = ["1|2|3|4|5|6|7|8|a1|a2|a3|a4|a5|a6|a7|a8"]
 msgCounter = 0x00
 message = ""
 
-def readKeyboard():
-    message = receiveMessage()
-    if message is not None and not message == "":
-        ring()
-        ring()
-    return keypad.pressed_keys
+log = ac_log.log("armachat_2.py", "armachat_2.txt")
 
 
 def beep():
@@ -48,83 +44,14 @@ def beep():
     audioPin.deinit()
 
 
-def ring():
-    audioPin = PWMOut(board.GP0, duty_cycle=0, frequency=440, variable_frequency=True)
-    audioPin.frequency = 2000
-    audioPin.duty_cycle = 1000 * (config.volume)
-    time.sleep(0.1)
-    audioPin.frequency = 3000
-    audioPin.duty_cycle = 1000 * (config.volume)
-    time.sleep(0.1)
-    audioPin.frequency = 6000
-    audioPin.duty_cycle = 1000 * (config.volume)
-    time.sleep(0.1)
-    audioPin.duty_cycle = 0
-    audioPin.deinit()
-
-
-def get_VSYSvoltage():
-    VSYSin = ((VSYS_voltage.value * 3.3) / 65536) * 3
-    return VSYSin
-
-def getFlags(f3=0, f2=0, status=0, hopLimit=config.hopLimit):
-    assert isinstance(f3, int), "ERROR: getFlags - f3 is not an int"
-    assert isinstance(f2, int), "ERROR: getFlags - f2 is not an int"
-    assert isinstance(status, int), "ERROR: getFlags - status is not an int"
-    assert isinstance(hopLimit, int), "ERROR: getFlags - hopLimit is not an int"
-
-    assert (
-        f3 >= 0 and f3 < 256
-    ), "ERROR: getFlags - f3 is not between 0 and 255"
-    assert (
-        f2 >= 0 and f2 < 256
-    ), "ERROR: getFlags - f2 is not between 0 and 255"
-    assert (
-        status >= 0 and status < 256
-    ), "ERROR: getFlags - status is not between 0 and 255"
-    assert (
-        hopLimit >= 0 and hopLimit < 256
-    ), "ERROR: getFlags - hopLimit is not between 0 and 255"
-
-    return [
-        f3,
-        f2,
-        status,
-        hopLimit
-    ]
-
-def getMessageId(msgCount=0):
-    assert isinstance(msgCount, int), "ERROR: getMessageId - msgCount is not an int"
-
-    assert (
-        msgCount >= 0 and msgCount < 256
-    ), "ERROR: getMessageId - msgCount is not between 0 and 255"
-
-    return [
-        random.randint(0, 255),
-        random.randint(0, 255),
-        random.randint(0, 255),
-        msgCount
-    ]
-
-def countMessages(msgStat=""):
-    if msgStat is None:
-        return 0
-    allMsg = len(messages)
-    c = 0
-    for i in range(allMsg):
-        if messages[i].count(msgStat) > 0:
-            c = c + 1
-    return c
-
-
 def changeMessageStatus(msgID="", old="", new=""):
     allMsg = len(messages)
     c = 0
-    print(msgID)
+    log.logValue("changeMessageStatus", "msgID", msgID)
     for i in range(allMsg):
         if messages[i].count(msgID) > 0:
-            print("Change status for message:" + msgID)
+            log.logMessage("changeMessageStatus", "Change status for message:" +
+                           msgID + " from " + old + " to " + new)
             messages[i] = messages[i].replace(old, new)
             c = c + 1
     return c
@@ -135,391 +62,15 @@ def clearScreen():
         screen[i].text = ""
 
 
-def screenSafeText(txt=""):
-    retText = txt
-
-    for x in range(32):
-        if x != 9 and x != 10 and x != 13:
-            retText = retText.replace(chr(x), "")
-    return retText
-
-
-def showMemory():
-    msg = 0
-    clearScreen()
-    ring()
-    screen.show()
-    while True:
-        time.sleep(0.1)  # a little delay here helps avoid debounce annoyances
-        keys = keypad.pressed_keys
-        if keys:
-            beep()
-            if keys[0] == "lt" or keys[0] == "bsp":
-                if msg > 0:
-                    msg = msg - 1
-            if keys[0] == "rt" or keys[0] == "ent":
-                if msg < (len(messages) - 1):
-                    msg = msg + 1
-            if keys[0] == "tab" or keys[0] == "alt":
-                beep()
-                return 1
-            if keys[0] == "s":
-                beep()
-                try:
-                    with open("messages.txt", "a") as f:
-                        for line in messages:
-                            print(line)
-                            f.write(line + "\n")
-                    # f.close()
-                except OSError:
-                    print("messages.txt - Read Only File System")
-            if keys[0] == "r":
-                beep()
-                messages.clear()
-                try:
-                    with open("messages.txt", "r") as f:
-                        msgf = f.readlines()
-                        print("Reading messages:")
-                        for line in msgf:
-                            print(line)
-                            messages.append(line)
-                    # f.close()
-                except OSError:
-                    print("messages.txt does not exist")
-            # for f in messages[message]
-            clearScreen()
-            screen[0].text = "Message:" + str(msg)
-            mem = messages[msg]
-            oneItm = mem.split("|")
-            line = 1
-            if messages[msg].count("|N|") > 0:
-                print("Mesage mark as read:" + str(msg))
-                messages[msg] = messages[msg].replace("|N|", "|R|")
-                ring()
-            # ( destination+'|'+sender+'|'+messageID+'|'+hop+'|R|'+rssi+'|'+snr+'|'+
-            # timeStamp+'|'+packet_text,'utf-8')
-            if keys[0] == " ":
-                screen[1].text = "Status:" + oneItm[4]
-                screen[2].text = "To:" + oneItm[0]
-                screen[3].text = "From:" + oneItm[1]
-                screen[4].text = "MsgId:" + oneItm[2]
-                screen[5].text = "Hop:" + oneItm[3]
-                screen[6].text = "RSSI:" + oneItm[5] + " SNR:" + oneItm[6]
-                screen[7].text = "Time:" + oneItm[7]
-                screen[8].text = "[ALT] Exit"
-            else:
-                screen[1].text = screenSafeText(oneItm[8])
-                screen[2].text = screenSafeText(oneItm[9])
-                screen[3].text = screenSafeText(oneItm[10])
-                screen[4].text = screenSafeText(oneItm[11])
-                screen[5].text = screenSafeText(oneItm[12])
-                screen[6].text = screenSafeText(oneItm[13])
-                screen[7].text = screenSafeText(oneItm[14])
-                screen[8].text = "ALT-Ex Ent> Del< SPC-Detail"
-
-
-def sendMessage(text, messageID, messageFlags):
-    LED.value = True
-
-    destination = ac_address.addressToList(address_book[to_dest_idx]["address"])
-    outp = bytearray(len(text))
-    cipher = aesio.AES(
-        bytes(config.password, "utf-8"),
-        aesio.MODE_CTR,
-        bytes(config.passwordIv, "utf-8"),
-    )
-    cipher.encrypt_into(bytes(text, "utf-8"), outp)
-    # print("Send header:")
-    # print(hexlify(bytearray(header)))
-    print("Encrypted message:")
-    print(hexlify(outp))
-    # rfm9x.send(list(bytearray(header)) + list(outp), 0)  # (list(outp), 0)
-    rfm9x.send(destination, list(outp), msgId=messageID, flags=messageFlags)
-
-    timeStamp = str(time.monotonic())
-    # print(sender)
-    # print(hop)
-    print("Save to message memory:")
-    print("text -> ", text)
-    print("type(text) -> ", type(text))
-    print()
-    print("messageID -> ", messageID)
-    print("type(messageID) -> ", type(messageID))
-
-    storedMsg = str(
-        ac_address.addressLst2Str(destination)
-        + "|"
-        + config.myAddress
-        + "|"
-        + str(hexlify(bytearray(messageID)))
-        + "|"
-        + str(rfm9x._hop_limit)
-        + "|S|n/a|n/a|"
-        + timeStamp  # str
-        + "|"
-        + text,  # str
-        "utf-8",
-    )
-    print(storedMsg)
-    messages.append(storedMsg)
-    LED.value = False
-
-
-def receiveMessage():
-    message = rfm9x.receive(timeout=0.1)
-
-    # If no packet was received during the timeout then None is returned.
-    if message is None:
-        return None
-    # Check values
-    if (
-        message["to"] is None
-        or message["from"] is None
-        or message["id"] is None
-        or message["flags"] is None
-    ):
-        print("ERROR: receiveMessage - to, from, id, or flags is None")
-        return None
-    if len(message["to"]) != 4:
-        print("ERROR: receiveMessage - 'to' incorrect length -> ", len(message["to"]))
-        return None
-    if len(message["from"]) != 4:
-        print(
-            "ERROR: receiveMessage - 'from' incorrect length -> ", len(message["from"])
-        )
-        return None
-    if len(message["id"]) != 4:
-        print("ERROR: receiveMessage - 'id' incorrect length -> ", len(message["id"]))
-        return None
-    if len(message["flags"]) != 4:
-        print(
-            "ERROR: receiveMessage - 'flags' incorrect length -> ",
-            len(message["flags"]),
-        )
-        return None
-    # Received delivery confirmation
-    if message["flags"][2] == 33:  # 33 = symbol ! it is delivery confirmation
-        print("Delivery comfirmation")
-        print('hexlify(message["id"])', str(hexlify(message["id"]), "utf-8"))
-        changeMessageStatus(
-            msgID=str(hexlify(message["id"]), "utf-8"), old="|S|", new="|D|"
-        )
-        # do something to mark message is delivered
-        packet_text = "D"
-        return packet_text
-    # One last check to see if we may continue
-    if message["data"] is None:
-        print("ERROR: receiveMessage - data is None")
-        return None
-    # Decrypt
-    cipher = aesio.AES(
-        bytes(config.password, "utf-8"),
-        aesio.MODE_CTR,
-        bytes(config.passwordIv, "utf-8"),
-    )
-    inp = bytes(message["data"])
-    outp = bytearray(len(inp))
-    cipher.encrypt_into(inp, outp)
-    print("Received encrypted message:")
-    print(hexlify(inp))
-    try:
-        packet_text = str(outp, "utf-8")
-    except UnicodeError as e:
-        print("ERROR: receiveMessage - cannot decode message")
-        packet_text = ""
-        print("Error Message -> ", e)
-        return packet_text
-    print("Decoded message:")
-    print(packet_text)
-
-    rssi = str(rfm9x.last_rssi)
-    snr = str(rfm9x.last_snr)
-    destination = ac_address.addressLst2Str(message["to"])
-    sender = message["from"]
-    messageID = str(hexlify(message["id"]))
-    hop = message["flags"][3]
-    timeStamp = str(time.monotonic())
-
-    print("destination -> ", destination)
-    print("sender -> ", sender)
-    print("messageID -> ", messageID)
-    print("hop -> ", hop)
-    print("timeStamp -> ", timeStamp)
-
-    storedMsg = str(
-        destination
-        + "|"
-        + ac_address.addressLst2Str(sender)
-        + "|"
-        + messageID
-        + "|"
-        + str(hop)
-        + "|N|"
-        + rssi
-        + "|"
-        + snr
-        + "|"
-        + timeStamp
-        + "|"
-        + packet_text,
-        "utf-8",
-    )
-
-    msgPart = storedMsg.split("|")
-
-    while len(msgPart) < 16:
-        storedMsg = storedMsg + "|"
-        msgPart = storedMsg.split("|")
-    print("SNR:" + snr + " RSSI:" + rssi)
-
-    print(storedMsg)
-    messages.append(storedMsg)
-
-    # confirmation
-    LED.value = True
-    # Set confirmation flag
-    message["flags"][2] = 33  # 33 = symbol ! it is delivery confirmation
-
-    # Create response header = swap destination<>sender + same message ID
-    # Sender (4:8), Destination (0:4), MessageID (8:12), HopLimit(12:16)
-    # header = message["from"] + message["to"] + message["id"] + message["flags"]
-    printDebugVal("message[\"from\"]", message["from"])
-    printDebugVal("unitAddress", unitAddress)
-    printDebugVal("message[\"id\"]", message["id"])
-    printDebugVal("message[\"flags\"]", message["flags"])
-
-    header = message["from"] + bytearray(unitAddress) + message["id"] + message["flags"]
-    print("Response header ...")
-    print(hexlify(header))
-    mId = ac_address.addressLst2Str(message["id"])
-    # rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
-    rfm9x.send(sender, (list(bytearray("Confirmation"))), message["id"], flags=message["flags"])
-
-    print("Confirmation send ...")
-    LED.value = False
-    return packet_text
-
-def printDebugVal(name, val):
-    print()
-    print(name + " -> ", val)
-    print("type(" + name + ") -> ", type(val))
-
-def valueUp(min, max, value):
-    value = value + 1
-    if value > max:
-        value = min
-    if value < min:
-        value = max
-    return value
-
-
-def getListIndex(lst, value):
-    for i in range(len(lst)):
-        if lst[i] == value:
-            return i
-    return -1
-
-
-def valueUpList(lst, value):
-    idx = getListIndex(lst, value) + 1
-
-    if idx >= len(lst):
-        idx = 0
-    if idx < 0:
-        idx = len(lst) - 1
-    return lst[idx]
-
-
-def setup():
-    menu = 0
-    screen[0].text = "SETUP:"
-    screen[1].text = "Use Left/Right"
-    screen[2].text = "to switch page"
-    screen[3].text = "[ESC] to exit"
-    screen[4].text = ""
-    screen[5].text = ""
-    screen[6].text = ""
-    screen[7].text = ""
-    screen[8].text = ""
-    ring()
-    screen.show()
-    while True:
-        keys = keypad.pressed_keys
-        if keys:
-            beep()
-            if keys[0] == "lt" or keys[0] == "bsp":
-                if menu > 0:
-                    menu = menu - 1
-            if keys[0] == "rt" or keys[0] == "ent":
-                if menu < 3:
-                    menu = menu + 1
-            if keys[0] == "tab" or keys[0] == "alt":
-                beep()
-                return 1
-            if menu == 0:
-                if keys[0] == "f":
-                    config.freq = valueUpList(FREQ_LIST, config.freq)
-                    radioInit()
-                    config.writeConfig()
-                if keys[0] == "p":
-                    config.power = valueUp(5, 23, config.power)
-                    radioInit()
-                    config.writeConfig()
-                if keys[0] == "x":
-                    config.loraProfile = valueUp(1, 6, config.loraProfile)
-                    loraProfileSetup(config.loraProfile)
-                    radioInit()
-                    config.writeConfig()
-                screen[0].text = "{:.d} Radio:".format(menu)
-                screen[1].text = "[F] Frequency: {:5.2f}MHz".format(config.freq)
-                screen[2].text = "[P] Power {:.d}".format(config.power)
-                screen[3].text = "[X] Profile {:.d}".format(config.loraProfile)
-                screen[4].text = modemPresetConfig
-                screen[5].text = modemPresetDescription
-                screen[6].text = ""
-                screen[7].text = ""
-                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
-                screen.show()
-            elif menu == 1:
-                if keys[0] == "n":
-                    config.myName = editor(text=config.myName)
-                    config.writeConfig()
-                screen[0].text = "{:.d} Identity:".format(menu)
-                screen[1].text = "[N] Name: {} ".format(config.myName)
-                screen[2].text = "------"
-                screen[3].text = "[G] Group 3:{}".format(config.myGroup3)
-                screen[4].text = "[G] Group 2:{}".format(config.myGroup2)
-                screen[5].text = "[G] Group 1:{}".format(config.myGroup1)
-                screen[6].text = "[I] ID:     {}".format(config.myID)
-                screen[7].text = "[E] Encryption {}"
-                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
-                screen.show()
-            elif menu == 2:
-                screen[0].text = "{:.d} Display:".format(menu)
-                screen[1].text = "[B] Bright {}".format(config.bright)
-                screen[2].text = "[I] Sleep  {}".format(config.sleep)
-                screen[3].text = "[F] Font   {}".format(config.font)
-                screen[4].text = "[T] Theme  {}".format(config.theme)
-                screen[5].text = ""
-                screen[6].text = ""
-                screen[7].text = ""
-                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
-                screen.show()
-            elif menu == 3:
-                if keys[0] == "v":
-                    config.volume = valueUp(0, 6, config.volume)
-                    ring()
-                    config.writeConfig()
-                screen[0].text = "{:.d} Sound:".format(menu)
-                screen[1].text = "[V] Volume {}".format(config.volume)
-                screen[2].text = ""
-                screen[3].text = "[T] Tone"
-                screen[4].text = "[M] Melody"
-                screen[5].text = ""
-                screen[6].text = ""
-                screen[7].text = ""
-                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
-                screen.show()
+def countMessages(msgStat=""):
+    if msgStat is None:
+        return 0
+    allMsg = len(messages)
+    c = 0
+    for i in range(allMsg):
+        if messages[i].count(msgStat) > 0:
+            c = c + 1
+    return c
 
 
 def editor(text):
@@ -637,6 +188,75 @@ def editor(text):
             EditorScreen.show()
 
 
+def get_VSYSvoltage():
+    VSYSin = ((VSYS_voltage.value * 3.3) / 65536) * 3
+    return VSYSin
+
+def getFlags(f3=0, f2=0, status=0, hopLimit=config.hopLimit):
+    assert isinstance(f3, int), "ERROR: getFlags - f3 is not an int"
+    assert isinstance(f2, int), "ERROR: getFlags - f2 is not an int"
+    assert isinstance(status, int), "ERROR: getFlags - status is not an int"
+    assert isinstance(hopLimit, int), "ERROR: getFlags - hopLimit is not an int"
+
+    assert (
+        f3 >= 0 and f3 < 256
+    ), "ERROR: getFlags - f3 is not between 0 and 255"
+    assert (
+        f2 >= 0 and f2 < 256
+    ), "ERROR: getFlags - f2 is not between 0 and 255"
+    assert (
+        status >= 0 and status < 256
+    ), "ERROR: getFlags - status is not between 0 and 255"
+    assert (
+        hopLimit >= 0 and hopLimit < 256
+    ), "ERROR: getFlags - hopLimit is not between 0 and 255"
+
+    return [
+        f3,
+        f2,
+        status,
+        hopLimit
+    ]
+
+
+def getListIndex(lst, value):
+    for i in range(len(lst)):
+        if lst[i] == value:
+            return i
+    return -1
+
+
+def getMessageId(msgCount=0):
+    assert isinstance(msgCount, int), "ERROR: getMessageId - msgCount is not an int"
+
+    assert (
+        msgCount >= 0 and msgCount < 256
+    ), "ERROR: getMessageId - msgCount is not between 0 and 255"
+
+    return [
+        random.randint(0, 255),
+        random.randint(0, 255),
+        random.randint(0, 255),
+        msgCount
+    ]
+
+
+def loadAddressBook():
+    broadcastAddressList = ac_address.broadcastAddressList(
+        config.myAddress, config.groupMask
+    )
+    broadcastAddress = ac_address.addressLst2Str(broadcastAddressList)
+    # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
+    parts = config.destinations.split("|")
+    retVal = [{"name": "All", "address": broadcastAddress}]
+
+    if len(parts) % 2 != 0:
+        return retVal
+    for i in range(0, len(parts), 2):
+        retVal += [{"name": parts[i], "address": parts[i + 1]}]
+    return retVal
+
+
 def loraProfileSetup(profile):
     global modemPresetConfig
     global modemPresetDescription
@@ -674,42 +294,423 @@ def loraProfileSetup(profile):
         modemPresetDescription = "Long/Slow"
 
 
+def receiveMessage():
+    message = rfm9x.receive(timeout=0.1)
+
+    # If no packet was received during the timeout then None is returned.
+    if message is None:
+        return None
+    # Check values
+    if (
+        message["to"] is None
+        or message["from"] is None
+        or message["id"] is None
+        or message["flags"] is None
+    ):
+        log.logMessage("receiveMessage", "to, from, id, or flags is None",
+                       status=ac_log.LogType.ERROR)
+        return None
+    if len(message["to"]) != 4:
+        log.logMessage("receiveMessage", "'to' incorrect length -> " +
+                       str(len(message["to"])), status=ac_log.LogType.ERROR)
+        return None
+    if len(message["from"]) != 4:
+        log.logMessage("receiveMessage", "'from' incorrect length -> " +
+                       str(len(message["from"])), status=ac_log.LogType.ERROR)
+        return None
+    if len(message["id"]) != 4:
+        log.logMessage("receiveMessage", "'id' incorrect length -> " +
+                       str(len(message["id"])), status=ac_log.LogType.ERROR)
+        return None
+    if len(message["flags"]) != 4:
+        log.logMessage("receiveMessage", "'flags' incorrect length -> " +
+                       str(len(message["flags"])), status=ac_log.LogType.ERROR)
+        return None
+    # Received delivery confirmation
+    if message["flags"][2] == 33:  # 33 = symbol ! it is delivery confirmation
+        log.logMessage("receiveMessage", "Delivery comfirmation")
+        log.logMessage("receiveMessage", 'hexlify(message["id"])' +
+                       str(hexlify(message["id"]), "utf-8"))
+        changeMessageStatus(
+            msgID=str(hexlify(message["id"]), "utf-8"), old="|S|", new="|D|"
+        )
+        # do something to mark message is delivered
+        packet_text = "D"
+        return packet_text
+    # One last check to see if we may continue
+    if message["data"] is None:
+        log.logMessage("receiveMessage", "data is None", ac_log.LogType.ERROR)
+        return None
+    # Decrypt
+    cipher = aesio.AES(
+        bytes(config.password, "utf-8"),
+        aesio.MODE_CTR,
+        bytes(config.passwordIv, "utf-8"),
+    )
+    inp = bytes(message["data"])
+    outp = bytearray(len(inp))
+    cipher.encrypt_into(inp, outp)
+    log.logMessage("receiveMessage", "Received encrypted message: " +
+                   str(hexlify(inp), "utf-8"))
+    try:
+        packet_text = str(outp, "utf-8")
+    except UnicodeError as e:
+        log.logMessage("receiveMessage", "cannot decode message",
+                       ac_log.LogType.WARNING)
+        log.logMessage("receiveMessage", "Error Message -> " + str(e),
+                       ac_log.LogType.WARNING)
+        packet_text = ""
+        return packet_text
+    log.logMessage("receiveMessage", "Decoded message: " + str(packet_text))
+
+    rssi = str(rfm9x.last_rssi)
+    snr = str(rfm9x.last_snr)
+    destination = ac_address.addressLst2Str(message["to"])
+    sender = message["from"]
+    messageID = str(hexlify(message["id"]), "utf=8")
+    hop = message["flags"][3]
+    timeStamp = str(time.monotonic())
+
+    log.logValue("receiveMessage", "destination", destination)
+    log.logValue("receiveMessage", "sender", sender)
+    log.logValue("receiveMessage", "messageID", messageID)
+    log.logValue("receiveMessage", "hop", hop)
+    log.logValue("receiveMessage", "timeStamp", timeStamp)
+
+    storedMsg = str(
+        destination
+        + "|"
+        + ac_address.addressLst2Str(sender)
+        + "|"
+        + messageID
+        + "|"
+        + str(hop)
+        + "|N|"
+        + rssi
+        + "|"
+        + snr
+        + "|"
+        + timeStamp
+        + "|"
+        + packet_text,
+        "utf-8",
+    )
+
+    msgPart = storedMsg.split("|")
+
+    while len(msgPart) < 16:
+        storedMsg = storedMsg + "|"
+        msgPart = storedMsg.split("|")
+
+    log.logMessage("receiveMessage", "SNR:" + snr + " RSSI:" + rssi)
+    log.logValue("receiveMessage", "storedMsg", storedMsg)
+
+    messages.append(storedMsg)
+
+    # confirmation
+    LED.value = True
+    # Set confirmation flag
+    message["flags"][2] = 33  # 33 = symbol ! it is delivery confirmation
+
+    # Create response header = swap destination<>sender + same message ID
+    # Sender (4:8), Destination (0:4), MessageID (8:12), HopLimit(12:16)
+    # header = message["from"] + message["to"] + message["id"] + message["flags"]
+    header = message["from"] + bytearray(unitAddress) + message["id"] + message["flags"]
+
+    log.logValue("receiveMessage", "message[\"from\"]", message["from"])
+    log.logValue("receiveMessage", "unitAddress", unitAddress)
+    log.logValue("receiveMessage", "message[\"id\"]", message["id"])
+    log.logValue("receiveMessage", "message[\"flags\"]", message["flags"])
+    log.logMessage("receiveMessage", "Response header ...")
+    log.logValue("receiveMessage", "Response header", hexlify(header))
+
+    # mId = ac_address.addressLst2Str(message["id"])
+    # rfm9x.send(list(bytearray(header + "!")), 0)  # (list(outp), 0)
+    rfm9x.send(sender, (list(bytearray("Confirmation"))),
+               message["id"], flags=message["flags"])
+
+    log.logMessage("receiveMessage", "Confirmation send ...")
+    LED.value = False
+    return packet_text
+
+
+def readKeyboard():
+    message = receiveMessage()
+    if message is not None and not message == "":
+        ring()
+        ring()
+    return keypad.pressed_keys
+
+
+def ring():
+    audioPin = PWMOut(board.GP0, duty_cycle=0, frequency=440, variable_frequency=True)
+    audioPin.frequency = 2000
+    audioPin.duty_cycle = 1000 * (config.volume)
+    time.sleep(0.1)
+    audioPin.frequency = 3000
+    audioPin.duty_cycle = 1000 * (config.volume)
+    time.sleep(0.1)
+    audioPin.frequency = 6000
+    audioPin.duty_cycle = 1000 * (config.volume)
+    time.sleep(0.1)
+    audioPin.duty_cycle = 0
+    audioPin.deinit()
+
+
+def screenSafeText(txt=""):
+    retText = txt
+
+    for x in range(32):
+        if x != 9 and x != 10 and x != 13:
+            retText = retText.replace(chr(x), "")
+    return retText
+
+
+def sendMessage(text, messageID, messageFlags):
+    LED.value = True
+
+    destination = ac_address.addressToList(address_book[to_dest_idx]["address"])
+    outp = bytearray(len(text))
+    cipher = aesio.AES(
+        bytes(config.password, "utf-8"),
+        aesio.MODE_CTR,
+        bytes(config.passwordIv, "utf-8"),
+    )
+    cipher.encrypt_into(bytes(text, "utf-8"), outp)
+    log.logMessage("sendMessage", "Encrypted message: " + str(hexlify(outp), "utf-8"))
+    # rfm9x.send(list(bytearray(header)) + list(outp), 0)  # (list(outp), 0)
+    rfm9x.send(destination, list(outp), msgId=messageID, flags=messageFlags)
+
+    timeStamp = str(time.monotonic())
+    log.logMessage("sendMessage", "Save to message memory ...")
+    log.logValue("sendMessage", "text", text)
+    log.logValue("sendMessage", "messageID", messageID)
+
+    storedMsg = str(
+        ac_address.addressLst2Str(destination)
+        + "|"
+        + config.myAddress
+        + "|"
+        + str(hexlify(bytearray(messageID)), "utf-8")
+        + "|"
+        + str(rfm9x._hop_limit)
+        + "|S|n/a|n/a|"
+        + timeStamp  # str
+        + "|"
+        + text,  # str
+        "utf-8",
+    )
+    log.logValue("sendMessage", "storedMsg", storedMsg)
+    messages.append(storedMsg)
+    LED.value = False
+
+
+def setup():
+    menu = 0
+    screen[0].text = "SETUP:"
+    screen[1].text = "Use Left/Right"
+    screen[2].text = "to switch page"
+    screen[3].text = "[ESC] to exit"
+    screen[4].text = ""
+    screen[5].text = ""
+    screen[6].text = ""
+    screen[7].text = ""
+    screen[8].text = ""
+    ring()
+    screen.show()
+    while True:
+        keys = keypad.pressed_keys
+        if keys:
+            beep()
+            if keys[0] == "lt" or keys[0] == "bsp":
+                if menu > 0:
+                    menu = menu - 1
+            if keys[0] == "rt" or keys[0] == "ent":
+                if menu < 3:
+                    menu = menu + 1
+            if keys[0] == "tab" or keys[0] == "alt":
+                beep()
+                return 1
+            if menu == 0:
+                if keys[0] == "f":
+                    config.freq = valueUpList(FREQ_LIST, config.freq)
+                    radioInit()
+                    config.writeConfig()
+                if keys[0] == "p":
+                    config.power = valueUp(5, 23, config.power)
+                    radioInit()
+                    config.writeConfig()
+                if keys[0] == "x":
+                    config.loraProfile = valueUp(1, 6, config.loraProfile)
+                    loraProfileSetup(config.loraProfile)
+                    radioInit()
+                    config.writeConfig()
+                screen[0].text = "{:.d} Radio:".format(menu)
+                screen[1].text = "[F] Frequency: {:5.2f}MHz".format(config.freq)
+                screen[2].text = "[P] Power {:.d}".format(config.power)
+                screen[3].text = "[X] Profile {:.d}".format(config.loraProfile)
+                screen[4].text = modemPresetConfig
+                screen[5].text = modemPresetDescription
+                screen[6].text = ""
+                screen[7].text = ""
+                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
+                screen.show()
+            elif menu == 1:
+                if keys[0] == "n":
+                    config.myName = editor(text=config.myName)
+                    config.writeConfig()
+                screen[0].text = "{:.d} Identity:".format(menu)
+                screen[1].text = "[N] Name: {} ".format(config.myName)
+                screen[2].text = "------"
+                screen[3].text = "[G] Group 3:{}".format(config.myGroup3)
+                screen[4].text = "[G] Group 2:{}".format(config.myGroup2)
+                screen[5].text = "[G] Group 1:{}".format(config.myGroup1)
+                screen[6].text = "[I] ID:     {}".format(config.myID)
+                screen[7].text = "[E] Encryption {}"
+                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
+                screen.show()
+            elif menu == 2:
+                screen[0].text = "{:.d} Display:".format(menu)
+                screen[1].text = "[B] Bright {}".format(config.bright)
+                screen[2].text = "[I] Sleep  {}".format(config.sleep)
+                screen[3].text = "[F] Font   {}".format(config.font)
+                screen[4].text = "[T] Theme  {}".format(config.theme)
+                screen[5].text = ""
+                screen[6].text = ""
+                screen[7].text = ""
+                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
+                screen.show()
+            elif menu == 3:
+                if keys[0] == "v":
+                    config.volume = valueUp(0, 6, config.volume)
+                    ring()
+                    config.writeConfig()
+                screen[0].text = "{:.d} Sound:".format(menu)
+                screen[1].text = "[V] Volume {}".format(config.volume)
+                screen[2].text = ""
+                screen[3].text = "[T] Tone"
+                screen[4].text = "[M] Melody"
+                screen[5].text = ""
+                screen[6].text = ""
+                screen[7].text = ""
+                screen[8].text = "[ALT] Exit [Ent] > [Del] <"
+                screen.show()
+
+
+def showMemory():
+    msg = 0
+    clearScreen()
+    ring()
+    screen.show()
+    while True:
+        time.sleep(0.1)  # a little delay here helps avoid debounce annoyances
+        keys = keypad.pressed_keys
+        if keys:
+            beep()
+            if keys[0] == "lt" or keys[0] == "bsp":
+                if msg > 0:
+                    msg = msg - 1
+            if keys[0] == "rt" or keys[0] == "ent":
+                if msg < (len(messages) - 1):
+                    msg = msg + 1
+            if keys[0] == "tab" or keys[0] == "alt":
+                beep()
+                return 1
+            if keys[0] == "s":
+                beep()
+                try:
+                    with open("messages.txt", "a") as f:
+                        for line in messages:
+                            log.logValue("showMemory", "line", line)
+                            f.write(line + "\n")
+                    # f.close()
+                except OSError:
+                    log.logMessage("showMemory", "messages.txt - Read Only File System",
+                                   ac_log.LogType.WARNING)
+            if keys[0] == "r":
+                beep()
+                messages.clear()
+                try:
+                    with open("messages.txt", "r") as f:
+                        msgf = f.readlines()
+                        log.logMessage("showMemory", "Reading messages:")
+                        for line in msgf:
+                            log.logValue("showMemory", "line", line)
+                            messages.append(line)
+                    # f.close()
+                except OSError:
+                    log.logMessage("showMemory", "messages.txt does not exist",
+                                   ac_log.LogType.ERROR)
+            # for f in messages[message]
+            clearScreen()
+            screen[0].text = "Message:" + str(msg)
+            mem = messages[msg]
+            oneItm = mem.split("|")
+            line = 1
+            if messages[msg].count("|N|") > 0:
+                log.logMessage("showMemory", "Mesage mark as read:" + str(msg))
+                messages[msg] = messages[msg].replace("|N|", "|R|")
+                ring()
+
+            if keys[0] == " ":
+                screen[1].text = "Status:" + oneItm[4]
+                screen[2].text = "To:" + oneItm[0]
+                screen[3].text = "From:" + oneItm[1]
+                screen[4].text = "MsgId:" + oneItm[2]
+                screen[5].text = "Hop:" + oneItm[3]
+                screen[6].text = "RSSI:" + oneItm[5] + " SNR:" + oneItm[6]
+                screen[7].text = "Time:" + oneItm[7]
+                screen[8].text = "[ALT] Exit"
+            else:
+                screen[1].text = screenSafeText(oneItm[8])
+                screen[2].text = screenSafeText(oneItm[9])
+                screen[3].text = screenSafeText(oneItm[10])
+                screen[4].text = screenSafeText(oneItm[11])
+                screen[5].text = screenSafeText(oneItm[12])
+                screen[6].text = screenSafeText(oneItm[13])
+                screen[7].text = screenSafeText(oneItm[14])
+                screen[8].text = "ALT-Ex Ent> Del< SPC-Detail"
+
+
+def valueUp(min, max, value):
+    value = value + 1
+    if value > max:
+        value = min
+    if value < min:
+        value = max
+    return value
+
+
+def valueUpList(lst, value):
+    idx = getListIndex(lst, value) + 1
+
+    if idx >= len(lst):
+        idx = 0
+    if idx < 0:
+        idx = len(lst) - 1
+    return lst[idx]
+
+
 def radioInit():
     global rfm9x
 
-    # print("myAddress -> ", myAddress)
-
-    try:
-        rfm9x = ac_lora.LoRa(
-            spi,
-            CS,
-            this_address=unitAddress,
-            group_mask=unitGroupMask,
-            hop_limit=config.hopLimit,
-            freq=config.freq,
-            tx_power=config.power,
-            modem_config=modemPreset,
-        )  # , interrupt=28
+    # try:
+    rfm9x = ac_lora.LoRa(
+        spi,
+        CS,
+        this_address=unitAddress,
+        group_mask=unitGroupMask,
+        hop_limit=config.hopLimit,
+        freq=config.freq,
+        tx_power=config.power,
+        modem_config=modemPreset,
+    )  # , interrupt=28
+    '''
     except Exception as e:
-        print("Lora module not detected !!!")  # None
-        print(e)
-
-
-def loadAddressBook():
-    broadcastAddressList = ac_address.broadcastAddressList(
-        config.myAddress, config.groupMask
-    )
-    broadcastAddress = ac_address.addressLst2Str(broadcastAddressList)
-    # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
-    parts = config.destinations.split("|")
-    retVal = [{"name": "All", "address": broadcastAddress}]
-
-    if len(parts) % 2 != 0:
-        return retVal
-    for i in range(0, len(parts), 2):
-        retVal += [{"name": parts[i], "address": parts[i + 1]}]
-    return retVal
-
+        log.logMessage("radioInit", "Lora module not detected !!!",
+                       ac_log.LogType.ERROR)
+        log.logMessage("radioInit", "ERROR -> " + str(e), ac_log.LogType.ERROR)
+    '''
 
 # ----------------------FUNCTIONS---------------------------
 
@@ -778,7 +779,7 @@ RESET = digitalio.DigitalInOut(board.GP17)
 spi = busio.SPI(board.GP10, MOSI=board.GP11, MISO=board.GP12)
 # Initialze radio
 
-print("starting Lora")
+log.logMessage("main", "starting Lora")
 
 # Grab settings from config.py/config.txt
 loraProfileSetup(config.loraProfile)
@@ -789,8 +790,7 @@ rfm9x = None
 
 radioInit()
 
-print("Free memory:")
-print(gc.mem_free())
+log.logMessage("main", "Free memory: " + str(gc.mem_free()))
 EditorScreen = SimpleTextDisplay(
     display=display,
     font=font,
@@ -830,13 +830,13 @@ screen = SimpleTextDisplay(
 )
 
 
-print("Screen ready,Free memory:")
-print(gc.mem_free())
+log.logMessage("main", "Screen ready,Free memory: " + str(gc.mem_free()))
 
 to_dest_idx = 0
 address_book = loadAddressBook()
 
-print("address_book -> ", address_book)
+
+log.logMessage("main", "address_book -> " + str(address_book))
 
 broadcastAddressList = ac_address.broadcastAddressList(
     config.myAddress, config.groupMask
@@ -915,14 +915,14 @@ while True:
         try:
             with open("config.txt", "r") as f:
                 lines = f.readlines()
-                print("Printing lines in file:")
+                log.logMessage("main", "Printing lines in file:")
                 count = 0
                 for line in lines:
                     count += 1
-                    print("Line{}: {}".format(count, line.strip()))
+                    log.logMessage("main", "Line{}: {}".format(count, line.strip()))
                 # f.close()
         except OSError:
-            print("config.txt does not exist")
+            log.logMessage("main", "config.txt does not exist", ac_log.LogType.WARNING)
     if keys[0] == "i":
         screen[0].text = "System info:"
         screen[1].text = "VSYS power = {:5.2f} V".format(get_VSYSvoltage())
@@ -973,7 +973,7 @@ while True:
         line[6] = ""
         for r in range(7):
             text = text + line[r] + "|"
-        print("text: " + text)
+        log.logMessage("main", "text: " + text)
         ring()
         sendMessage(text, getMessageId(msgCounter), getFlags())
         message = receiveMessage()

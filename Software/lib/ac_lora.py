@@ -1,5 +1,7 @@
 import time
 import adafruit_bus_device.spi_device as spidev
+import ac_address
+import ac_log
 
 # Constants
 FLAGS_ACK = 0x80
@@ -109,6 +111,10 @@ class LoRa(object):
         self._hop_limit = hop_limit
         self._last_header_id = 0
 
+        self.broadcastAddress = \
+            ac_address.broadcastAddressList_List(self._this_address,
+                                                 self._group_mask)
+
         self._last_payload = None
         self.crypto = crypto
 
@@ -118,6 +124,8 @@ class LoRa(object):
         self.retry_timeout = 0.2
 
         self.message_count = 0
+
+        self.log = ac_log.log(pyFile="ac_lora.py", logFileName="ac_lora.txt")
 
         # check if modem_config is set to 3 bytes
         assert (
@@ -257,31 +265,42 @@ class LoRa(object):
         msg_sent = False
 
         if to is None:
-            print("LoRa send failed - Must pass valid To Address")
+            self.log.logMessage("send",
+                                "LoRa send failed - Must pass valid To Address",
+                                ac_log.LogType.ERROR)
             return msg_sent
 
         if type(to) == list:
             to = bytearray(to)
 
         if not isinstance(to, bytearray) or len(to) != 4:
-            print("LoRa send failed - To Address must be a bytearray of 4 bytes")
+            self.log.logMessage("send",
+                                "LoRa send failed - To Address must " +
+                                "be a bytearray of 4 bytes",
+                                ac_log.LogType.ERROR)
             return msg_sent
         if data is None or len(data) == 0:
-            print("LoRa send failed - Data cannot be None or empty")
+            self.log.logMessage("send",
+                                "LoRa send failed - Data cannot be None or empty",
+                                ac_log.LogType.ERROR)
             return msg_sent
         if msgId is None:
-            print("LoRa send failed - Must pass valid msgId")
+            self.log.logMessage("send",
+                                "LoRa send failed - Must pass valid msgId",
+                                ac_log.LogType.ERROR)
             return msg_sent
 
         if type(msgId) == list:
             msgId = bytearray(msgId)
 
         if not isinstance(msgId, bytearray) or len(msgId) != 4:
-            print("LoRa send failed - msgId must be a bytearray of 4 bytes")
+            self.log.logMessage("send",
+                                "LoRa send failed - msgId must be a " +
+                                "bytearray of 4 bytes",
+                                ac_log.LogType.ERROR)
             return msg_sent
 
         self.set_mode_idle()
-
 
         if type(flags) == list:
             flags = bytearray(flags)
@@ -293,9 +312,7 @@ class LoRa(object):
             to + bytearray(self._this_address) + msgId + flags
         )
 
-        print("header -> ", header)
-        print("type(header) -> ", type(header))
-        # header ->  [3, 2, 1, 1, 19, 18, 17, 1, 115, 89, 117, 0, 0, 0, 0, 3]
+        self.log.logValue("send", "header", header)
 
         if type(data) == int:
             data = [data]
@@ -306,11 +323,10 @@ class LoRa(object):
         # elif type(data) == list:
         #    data = bytearray(data)
 
-        print("data -> ", data)
-        print("type(data) -> ", type(data))
+        self.log.logValue("send", "data", data)
 
         payload = list(header) + list(data)
-        print("payload -> ", payload)
+        self.log.logValue("send", "payload", payload)
         # payload ->  [0, 0, 0, 0,
         #              19, 18, 17, 0,
         #              3, 2, 1, 1,
@@ -454,7 +470,14 @@ class LoRa(object):
             print()
             print("message ->", message)
             print("type(message) ->", type(message))
-        if packet is not None and len(packet) > 16:
+        if packet is not None:
+            print()
+            print("packet ->", packet)
+            print("type(packet) ->", type(packet))
+        if packet is not None and packet_len > 16 and \
+                (type(packet) == bytearray or type(packet) == list) and \
+                (list(header_to) == self._this_address or
+                 list(header_to) == self.broadcastAddress):
             return {
                 "packet": packet,
                 "to": header_to,
@@ -463,13 +486,13 @@ class LoRa(object):
                 "flags": header_flags,
                 "data": message,
             }
+        elif header_to is not None:
+            self.log.logMessage("receive",
+                                "Received message not addressed to this unit")
+            self.log.logMessage("receive",
+                                "Addressed to:" +
+                                ac_address.addressLst2Str(list(header_to)))
         return None
-
-
-
-
-
-
 
 
 '''
@@ -510,7 +533,8 @@ def _unitTests():
         2,
         76,
         255,
-    ], 'ERROR: Test Failed - broadcastAddressList("128-2-76-255") returned incorrect value'
+    ], 'ERROR: Test Failed - broadcastAddressList("128-2-76-255") " + \
+            "returned incorrect value'
 
     assert (
         broadcastAddressList("128-2-76-400") is None
