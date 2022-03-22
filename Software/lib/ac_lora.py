@@ -477,7 +477,8 @@ class LoRa(object):
         if packet is not None and packet_len > 16 and \
                 (type(packet) == bytearray or type(packet) == list) and \
                 (list(header_to) == self._this_address or
-                 list(header_to) == self.broadcastAddress):
+                 list(header_to) == self.broadcastAddress or
+                 self.receive_all):
             return {
                 "packet": packet,
                 "to": header_to,
