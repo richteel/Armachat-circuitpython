@@ -118,13 +118,13 @@ def editor(text):
             keypad = adafruit_matrixkeypad.Matrix_Keypad(
                 config.rows, config.cols, config.keys2
             )
-            layoutName = "123"
+            layoutName = "ABC"
             HotKeysHelp = "[Ent] < Left  [Del] > Right"
         elif layout == 2:
             keypad = adafruit_matrixkeypad.Matrix_Keypad(
                 config.rows, config.cols, config.keys3
             )
-            layoutName = "ABC"
+            layoutName = "123"
             HotKeysHelp = "[Ent] Down    [Del] Up"
         keys = keypad.pressed_keys
 

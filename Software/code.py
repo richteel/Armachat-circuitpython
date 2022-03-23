@@ -37,7 +37,7 @@ for i in range(0, max_length, 1):
 print("====== Press number 0-9 =========")
 while True:
 
-    keypad = adafruit_matrixkeypad.Matrix_Keypad(config.rows, config.cols, config.keys2)
+    keypad = adafruit_matrixkeypad.Matrix_Keypad(config.rows, config.cols, config.keys3)
     keys = keypad.pressed_keys
     if keys:
         try:
