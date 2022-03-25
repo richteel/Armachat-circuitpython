@@ -241,6 +241,40 @@ def getMessageId(msgCount=0):
     ]
 
 
+# Only exists as there is no good way to update the title
+# The alternate way to update the title is to use the following
+#       screen.text_group[0].text = "ARMACHAT {:5.2f}MHz".format(config.freq)
+def getScreen():
+    titleText = "ARMACHAT {:5.2f}MHz".format(config.freq)
+
+    while len(titleText) < config.maxChars - 2:
+        titleText += " "
+
+    if config.fileSystemWriteMode():
+        titleText += "RW"
+    else:
+        titleText += "RO"
+
+    return SimpleTextDisplay(
+        display=display,
+        font=font,
+        title=titleText,
+        title_scale=1,
+        text_scale=1,
+        colors=(
+            SimpleTextDisplay.GREEN,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.WHITE,
+            SimpleTextDisplay.RED,
+        ),
+    )
+
+
 def loadAddressBook():
     broadcastAddressList = ac_address.broadcastAddressList(
         config.myAddress, config.groupMask
@@ -506,6 +540,8 @@ def sendMessage(text, messageID, messageFlags):
 
 
 def setup():
+    global screen
+
     menu = 0
     screen[0].text = "SETUP:"
     screen[1].text = "Use Left/Right"
@@ -536,6 +572,8 @@ def setup():
                     config.freq = valueUpList(FREQ_LIST, config.freq)
                     radioInit()
                     config.writeConfig()
+                    # Update the title
+                    screen = getScreen()
                 if keys[0] == "p":
                     config.power = valueUp(5, 23, config.power)
                     radioInit()
@@ -670,7 +708,6 @@ def showMemory():
                 screen[6].text = screenSafeText(oneItm[13])
                 screen[7].text = screenSafeText(oneItm[14])
                 screen[8].text = "ALT-Ex Ent> Del< SPC-Detail"
-
 
 def valueUp(min, max, value):
     value = value + 1
@@ -810,25 +847,7 @@ EditorScreen = SimpleTextDisplay(
     ),
 )
 
-screen = SimpleTextDisplay(
-    display=display,
-    font=font,
-    title="ARMACHAT {:5.2f}MHz".format(config.freq),
-    title_scale=1,
-    text_scale=1,
-    colors=(
-        SimpleTextDisplay.GREEN,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.WHITE,
-        SimpleTextDisplay.RED,
-    ),
-)
-
+screen = getScreen()
 
 log.logMessage("main", "Screen ready,Free memory: " + str(gc.mem_free()))
 

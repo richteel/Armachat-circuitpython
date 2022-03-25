@@ -48,11 +48,12 @@ display = ST7789(
 print("Free memory:")
 print(gc.mem_free())
 
+writemode = True
 if VBUS_status.value:
     print("USB power connected")
 else:
+    writemode = False
     print("No USB power")
-writemode = True
 
 keypad = adafruit_matrixkeypad.Matrix_Keypad(config.rows, config.cols, config.keys1)
 
@@ -73,32 +74,34 @@ else:
     print("No option for WRITE from code")
 
 LED.value = False
-LOOPCOUNT = 32
-for x in range(LOOPCOUNT):
-    s = "["
-    for i in range(0, LOOPCOUNT):
-        if (LOOPCOUNT - 1) - i > x:
-            s = s + "-"
+
+if writemode:
+    LOOPCOUNT = 32
+    for x in range(LOOPCOUNT):
+        s = "["
+        for i in range(0, LOOPCOUNT):
+            if (LOOPCOUNT - 1) - i > x:
+                s = s + "-"
+            else:
+                s = s + " "
+        if x == LOOPCOUNT - 1:
+            print(s + "]\n")
         else:
-            s = s + " "
-    if x == LOOPCOUNT - 1:
-        print(s + "]\n")
-    else:
-        print(s + "]\r", end='')
+            print(s + "]\r", end="")
 
-    LED.value = not LED.value  # toggle LED on/off as notice
-    time.sleep(0.05)
-    keys = keypad.pressed_keys
+        LED.value = not LED.value  # toggle LED on/off as notice
+        time.sleep(0.05)
+        keys = keypad.pressed_keys
 
-    if not keys:
-        continue
-    if keys[0] == "bsp":
-        print("SAFE MODE DETECTED .....")
-        microcontroller.on_next_reset(microcontroller.RunMode.SAFE_MODE)
-        microcontroller.reset()
-    if keys[0] == "alt":
-        print("Write mode enabled .....")
-        writemode = False
+        if not keys:
+            continue
+        if keys[0] == "bsp":
+            print("SAFE MODE DETECTED .....")
+            microcontroller.on_next_reset(microcontroller.RunMode.SAFE_MODE)
+            microcontroller.reset()
+        if keys[0] == "alt":
+            print("Write mode enabled .....")
+            writemode = False
 
 # RENAME DRIVE
 new_name = "ARMACHAT"
