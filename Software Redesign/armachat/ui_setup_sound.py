@@ -17,7 +17,7 @@ class ui_setup_sound(ui_screen):
             Line("[M] Melody %melodyIdx%", SimpleTextDisplay.WHITE),
             Line("    %melodyName%", SimpleTextDisplay.WHITE),
             Line("    %melodyLenSecs% secs", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
+            Line("[P] Play Melody", SimpleTextDisplay.WHITE),
             Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
         ]
         lines20 = [
@@ -27,9 +27,9 @@ class ui_setup_sound(ui_screen):
             Line("", SimpleTextDisplay.WHITE),
             Line("[T] Tone", SimpleTextDisplay.WHITE),
             Line("[M] Melody", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
+            Line("    %melodyName%", SimpleTextDisplay.WHITE),
+            Line("    %melodyLenSecs% secs", SimpleTextDisplay.WHITE),
+            Line("[P] Play Melody", SimpleTextDisplay.WHITE),
             Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
         ]
         self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
@@ -82,26 +82,31 @@ class ui_setup_sound(ui_screen):
                     self.vars.sound.ring()
                     return keypress
                 elif keypress["key"] == "v":
-                    config.volume += 1
-                    if config.volume > 6:
-                        config.volume = 0
-                    config.writeConfig()
+                    if keypress["longPress"]:
+                        config.volume = self.changeValInt(config.volume, 0, 6, 1, False)
+                    else:
+                        config.volume = self.changeValInt(config.volume, 0, 6)
                     self._show_screen()
                     self.vars.sound.ring()
                 elif keypress["key"] == "t":
-                    config.tone += 1000
-                    if config.tone > 10000:
-                        config.tone = 1000
+                    if keypress["longPress"]:
+                        config.tone = self.changeValInt(config.tone, 1000, 10000, 1000, False)
+                    else:
+                        config.tone = self.changeValInt(config.tone, 1000, 10000, 1000)
                     config.writeConfig()
                     self._show_screen()
                     self.vars.sound.ring()
                 elif keypress["key"] == "m":
                     self.vars.sound.ring()
-                    config.melody += 1
-                    if config.melody > len(self.vars.sound.melody.melodies) - 1:
-                        config.melody = 0
-                    self._show_screen()
+                    if keypress["longPress"]:
+                        config.melody = self.changeValInt(config.melody, 0, len(self.vars.sound.melody.melodies) - 1, 1, False)
+                    else:
+                        config.melody = self.changeValInt(config.melody, 0, len(self.vars.sound.melody.melodies) - 1)
                     config.writeConfig()
+                    self._show_screen()
+                elif keypress["key"] == "p":
+                    self.vars.sound.ring()
+                    self._show_screen()
                     self.vars.sound.play_melody(config.melody)
                 elif keypress["key"] in self.exit_keys:
                     self.vars.sound.ring()

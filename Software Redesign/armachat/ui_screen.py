@@ -1,5 +1,4 @@
 import gc
-
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
 from config import config
@@ -122,6 +121,20 @@ class ui_screen(object):
                 self.vars.display.screen[i].text = self._replace_var(self.lines[line].text, screen_vars)
             
         self.vars.display.screen.show()
+
+    def changeValInt(self, currentval, min, max, step=1, inc=True):
+        newval = currentval
+        if inc:
+            newval += step
+        else:
+            newval -= step
+
+        if newval < min:
+            newval = max
+        elif newval > max:
+            newval = min
+        
+        return newval
 
     def show(self):
         raise NotImplementedError

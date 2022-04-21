@@ -1,7 +1,11 @@
-
+import gc
 from config import config
 from armachat import hw
-from armachat import melodyXmas as melody
+from armachat import melody as melody
+# from armachat import melody1 as melody
+# from armachat import melody2 as melody
+# from armachat import melody3 as melody
+# from armachat import melodyXmas as melody
 import time
 from pwmio import PWMOut
 
@@ -54,6 +58,7 @@ class audio():
     
     # REF: https://blog.wokwi.com/play-musical-notes-on-circuitpython/
     def play_melody(self, melodyIndex):
+        gc.collect()
         if melodyIndex < 0:
             melodyIndex = 0
         elif melodyIndex >= len(melody.melodies):
@@ -75,6 +80,7 @@ class audio():
                     return
             self.play_tone(self.note(notename), eighths * (wholeInSec/8))
             time.sleep(wholeInSec/64)
+        gc.collect()
 
     def play_tone(self, freq, length):
         '''
