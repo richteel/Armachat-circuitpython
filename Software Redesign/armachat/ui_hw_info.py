@@ -36,10 +36,13 @@ class ui_hw_info(ui_screen):
     def show(self):
         self.line_index = 0
         self._show_screen()
+        self.vars.display.sleepUpdate(None, True)
 
         while True:
             self.vars.radio.receive(self.vars)
             keypress = self.vars.keypad.get_key()
+            if self.vars.display.sleepUpdate(keypress):
+                continue
 
             if keypress is not None:
                 print("keypress -> ", keypress)

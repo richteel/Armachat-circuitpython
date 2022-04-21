@@ -42,7 +42,8 @@ class ui_setup_sound(ui_screen):
         while True:
             self.vars.radio.receive(self.vars)
             keypress = self.vars.keypad.get_key()
-            self.vars.display.sleepUpdate(keypress)
+            if self.vars.display.sleepUpdate(keypress):
+                continue
 
             if keypress is not None:
                 print("keypress -> ", keypress)

@@ -41,7 +41,8 @@ class ui_main(ui_screen):
         while True:
             self.vars.radio.receive(self.vars)
             keypress = self.vars.keypad.get_key()
-            self.vars.display.sleepUpdate(keypress)
+            if self.vars.display.sleepUpdate(keypress):
+                continue
 
             if keypress is not None:
                 print("keypress -> ", keypress)
@@ -76,9 +77,11 @@ class ui_main(ui_screen):
                     self.vars.display.toggleBacklight()
                 elif keypress["key"] == "d":
                     self.vars.sound.ring()
-                    self.vars.to_dest_idx += 1
-                    if self.vars.to_dest_idx > len(self.vars.address_book) - 1:
-                        self.vars.to_dest_idx = 0
+                    if keypress["longPress"]:
+                        self.vars.to_dest_idx = self.changeValInt(self.vars.to_dest_idx, 0, len(self.vars.address_book) - 1, 1, False)
+                    else:
+                        self.vars.to_dest_idx = self.changeValInt(self.vars.to_dest_idx, 0, len(self.vars.address_book) - 1)
+
                     self._show_screen()
                 elif keypress["key"] == "t":
                     self.vars.sound.ring()

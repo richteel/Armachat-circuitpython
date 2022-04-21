@@ -95,6 +95,8 @@ class display(object):
         config.writeConfig()
 
     def sleepUpdate(self, keypress, initTimer=False):
+        beginSleepState = self._sleep
+
         if keypress is not None or initTimer:
             self._lastKeyPress = time.monotonic()
             # Wake up
@@ -107,7 +109,7 @@ class display(object):
                 self._sleep = True
                 self.display.brightness = 0
 
-        return self._sleep
+        return beginSleepState and not self._sleep
 
     def test(self):
         screenColors = (

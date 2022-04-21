@@ -42,7 +42,8 @@ class ui_setup_display(ui_screen):
         while True:
             self.vars.radio.receive(self.vars)
             keypress = self.vars.keypad.get_key()
-            self.vars.display.sleepUpdate(keypress)
+            if self.vars.display.sleepUpdate(keypress):
+                continue
 
             if keypress is not None:
                 print("keypress -> ", keypress)
@@ -90,11 +91,17 @@ class ui_setup_display(ui_screen):
                     return keypress
                 elif keypress["key"] == "b":
                     self.vars.sound.ring()
-                    self.vars.display.incBrightness(1)
+                    if keypress["longPress"]:
+                        self.vars.display.incBrightness(-1)
+                    else:
+                        self.vars.display.incBrightness(1)
                     self._show_screen()
                 elif keypress["key"] == "s":
                     self.vars.sound.ring()
-                    self.vars.display.incSleep(1)
+                    if keypress["longPress"]:
+                        self.vars.display.incSleep(-1)
+                    else:
+                        self.vars.display.incSleep(1)
                     self._show_screen()
                 elif keypress["key"] in self.exit_keys:
                     self.vars.sound.ring()
