@@ -35,6 +35,7 @@ class ui_screen(object):
             "%countMessagesAll%": str(self._countMessages("")),
             "%countMessagesNew%": str(self._countMessages("|N|")),
             "%countMessagesUndel%": str(self._countMessages("|S|")),
+            "%module%": "{:3.0f}".format(config.module),
             "%power%": str(config.power),
             "%profile%": str(config.loraProfile),
             "%profileName%": hw.get_lora_profile_val("modemPresetConfig"),
@@ -118,23 +119,78 @@ class ui_screen(object):
             if i > self.vars.display.height_lines - 1 or line > len(self.lines) - 1:
                 self.vars.display.screen[i].text = ""
             else:
-                self.vars.display.screen[i].text = self._replace_var(self.lines[line].text, screen_vars)
+                self.vars.display.screen[i].text = \
+                    self._replace_var(self.lines[line].text, screen_vars)
             
         self.vars.display.screen.show()
 
-    def changeValInt(self, currentval, min, max, step=1, inc=True):
+    def changeValInt(self, currentval, min, max, step=1, loopval=False):
         newval = currentval
-        if inc:
-            newval += step
-        else:
-            newval -= step
-
-        if newval < min:
+        newval += step
+        
+        if not loopval and (newval < min or newval > max):
+            newval = currentval
+        elif loopval and newval < min:
             newval = max
-        elif newval > max:
+        elif loopval and newval > max:
             newval = min
         
         return newval
+
+    def checkKeys(self, keypress):
+        handled = False
+        
+        print("keypress -> ", keypress)
+
+        # Navigation for small screens
+        if keypress["key"] == "o":
+            if self._inc_lines(-1 * self.vars.display.height_lines):
+                self._show_screen()
+                self.vars.sound.ring()
+            else:
+                self.vars.sound.beep()
+        elif keypress["key"] == "l":
+            if self._inc_lines(self.vars.display.height_lines):
+                self._show_screen()
+                self.vars.sound.ring()
+            else:
+                self.vars.sound.beep()
+        # Special keys for all screens except editor
+        # Volume
+        elif keypress["key"] == "v":
+            preval = config.volume
+            if keypress["longPress"]:
+                config.volume = self.changeValInt(config.volume, 0, 6, -1)
+            else:
+                config.volume = self.changeValInt(config.volume, 0, 6)
+            
+            if preval != config.volume:
+                self.vars.sound.ring()
+            else:
+                self.vars.sound.beep()
+        # Brightness (Screen)
+        elif keypress["key"] == "b":
+            preval = config.bright
+            if keypress["longPress"]:
+                self.vars.display.incBacklight(-1)
+            else:
+                self.vars.display.incBacklight(1)
+            if preval != config.bright:
+                self.vars.sound.ring()
+            else:
+                self.vars.sound.beep()
+        # Toggle Keyboard Backlight
+        elif keypress["key"] == "q":
+            if self.vars.keypad.toggleBacklight():
+                self.vars.sound.ring()
+            else:
+                self.vars.sound.beep()
+        # Toggle Display Backlight
+        elif keypress["key"] == "a":
+            self.vars.sound.ring()
+            self.vars.display.toggleBacklight()
+
+        return handled
 
     def show(self):
         raise NotImplementedError

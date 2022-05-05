@@ -1,6 +1,7 @@
 import os
 
 unitName = "ARMACHAT"
+module = 915
 freq = 915.0
 power = 23
 
@@ -28,13 +29,13 @@ hopLimit = 3
 password = "Sixteen byte key"
 passwordIv = "Sixteen byte key"
 bright = 4
-sleep = 0
+sleep = 1
 font = 2
 theme = 1
 
-volume = 2
+volume = 6
 tone = 5000
-melody = 2
+melody = 30
 
 '''
 Models

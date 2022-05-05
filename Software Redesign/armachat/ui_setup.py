@@ -45,48 +45,20 @@ class ui_setup(ui_screen):
                 continue
 
             if keypress is not None:
-                print("keypress -> ", keypress)
-
-                if keypress["key"] == "o":
-                    if self._inc_lines(-1 * self.vars.display.height_lines):
-                        self._show_screen()
+                # O, L, Q, A, B, V
+                if not self.checkKeys(keypress):
+                    if keypress["key"] == "alt":
                         self.vars.sound.ring()
-                    else:
-                        self.vars.sound.beep()
-                elif keypress["key"] == "l":
-                    if self._inc_lines(self.vars.display.height_lines):
-                        self._show_screen()
-                        self.vars.sound.ring()
-                    else:
-                        self.vars.sound.beep()
-                elif keypress["key"] == "x":
-                    self.vars.sound.ring()
-                    if not self.vars.display.incBacklight(1):
-                        self.vars.sound.ring()
-                elif keypress["key"] == "z":
-                    self.vars.sound.ring()
-                    if not self.vars.display.incBacklight(-1):
-                        self.vars.sound.ring()
-                elif keypress["key"] == "q":
-                    if self.vars.keypad.toggleBacklight():
-                        self.vars.sound.ring()
-                    else:
-                        self.vars.sound.beep()
-                elif keypress["key"] == "a":
-                    self.vars.sound.ring()
-                    self.vars.display.toggleBacklight()
-                elif keypress["key"] == "alt":
-                    self.vars.sound.ring()
-                    return None
-                elif keypress["key"] == "ent":
-                    self.vars.sound.ring()
-                    gui_setup_next = ui_setup_radio(self.vars)
-                    if gui_setup_next.show() == None:
                         return None
-                    self.line_index = 0
-                    self._show_screen()
-                elif keypress["key"] in self.exit_keys:
-                    self.vars.sound.ring()
-                    return keypress
-                else:
-                    self.vars.sound.beep()
+                    elif keypress["key"] == "ent":
+                        self.vars.sound.ring()
+                        gui_setup_next = ui_setup_radio(self.vars)
+                        if gui_setup_next.show() == None:
+                            return None
+                        self.line_index = 0
+                        self._show_screen()
+                    elif keypress["key"] in self.exit_keys:
+                        self.vars.sound.ring()
+                        return keypress
+                    else:
+                        self.vars.sound.beep()

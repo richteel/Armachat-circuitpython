@@ -1,6 +1,5 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
-from adafruit_simple_text_display import SimpleTextDisplay
 
 from adafruit_display_text import label
 from adafruit_bitmap_font import bitmap_font

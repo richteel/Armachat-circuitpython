@@ -33,26 +33,11 @@ class display(object):
 
         bright_start = self.get_brightness()
 
-        config.bright -= step
+        config.bright += step
 
         self.set_brightness(config.bright)
 
         return self.get_brightness() != bright_start
-    
-    # used in settings to loop through brightness settings using b
-    def incBrightness(self, step):
-        sleep_start = config.bright
-
-        config.bright += step
-
-        if config.bright < 0:
-            config.bright = len(self._brightsteps) - 1
-        elif config.bright >= len(self._brightsteps):
-            config.bright = 0
-
-        self.set_brightness(config.bright)
-
-        return config.bright != sleep_start
 
     def set_brightness(self, step):
         config.bright = step
@@ -68,8 +53,11 @@ class display(object):
         config.writeConfig()
 
     def get_sleepStep(self):
-        if config.sleep < 0 or config.sleep > len(self._sleepsteps):
+        if config.sleep < 0:
             config.sleep = 0
+            config.writeConfig()
+        elif config.sleep > len(self._sleepsteps):
+            config.sleep = len(self._sleepsteps) - 1
             config.writeConfig()
 
         return config.sleep
@@ -78,9 +66,11 @@ class display(object):
         return self._sleepsteps[self.get_sleepStep()]
     
     def incSleep(self, step):
-        sleep_start = self.get_sleepStep()
+        sleep_start = config.sleep
 
-        self.set_sleep(config.sleep + step)
+        config.sleep += step
+
+        self.set_sleep(config.sleep)
 
         return self.get_sleepStep() != sleep_start
 
@@ -88,9 +78,9 @@ class display(object):
         config.sleep = step
 
         if config.sleep < 0:
-            config.sleep = len(self._sleepsteps) - 1
-        elif config.sleep >= len(self._sleepsteps):
             config.sleep = 0
+        elif config.sleep >= len(self._sleepsteps):
+            config.sleep = len(self._sleepsteps) - 1
         
         config.writeConfig()
 
