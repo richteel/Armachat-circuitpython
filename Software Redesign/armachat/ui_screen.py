@@ -1,4 +1,5 @@
 import gc
+import supervisor
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
 from config import config
@@ -13,6 +14,7 @@ class ui_screen(object):
         self.lines = []
         self.line_index = 0
         self.fs_rw = "??"
+        self.fs_rw_long = "??"
 
     def _countMessages(self, msgStat=""):
         if msgStat is None:
@@ -28,6 +30,7 @@ class ui_screen(object):
         return {
             "%freq%": "{:5.2f}".format(config.freq),
             "%RW%": self.fs_rw,
+            "%RWlong%": self.fs_rw_long,
             "%myAddress%": str(config.myAddress),
             "%myName%": config.myName,
             "%toAddress%": self.vars.address_book[self.vars.to_dest_idx]["address"],
@@ -35,7 +38,7 @@ class ui_screen(object):
             "%countMessagesAll%": str(self._countMessages("")),
             "%countMessagesNew%": str(self._countMessages("|N|")),
             "%countMessagesUndel%": str(self._countMessages("|S|")),
-            "%module%": "{:3.0f}".format(config.module),
+            "%region%": config.region,
             "%power%": str(config.power),
             "%profile%": str(config.loraProfile),
             "%profileName%": hw.get_lora_profile_val("modemPresetConfig"),
@@ -88,8 +91,10 @@ class ui_screen(object):
         print("gc.collect()")
         print("Free RAM: {:,}".format(gc.mem_free()))
         self.fs_rw = "RO"
+        self.fs_rw_long = "Read Only"
         if config.fileSystemWriteMode():
-            self.fs_rw += "RW"
+            self.fs_rw = "RW"
+            self.fs_rw_long = "Read Write"
 
         screen_vars = self._get_vars()
         
@@ -163,6 +168,7 @@ class ui_screen(object):
                 config.volume = self.changeValInt(config.volume, 0, 6, -1)
             else:
                 config.volume = self.changeValInt(config.volume, 0, 6)
+            config.writeConfig()
             
             if preval != config.volume:
                 self.vars.sound.ring()
@@ -175,6 +181,8 @@ class ui_screen(object):
                 self.vars.display.incBacklight(-1)
             else:
                 self.vars.display.incBacklight(1)
+            config.writeConfig()
+
             if preval != config.bright:
                 self.vars.sound.ring()
             else:
@@ -191,6 +199,9 @@ class ui_screen(object):
             self.vars.display.toggleBacklight()
 
         return handled
+
+    def isUsbConnected(self):
+        return supervisor.runtime.usb_connected
 
     def show(self):
         raise NotImplementedError

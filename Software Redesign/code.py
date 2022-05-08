@@ -12,8 +12,8 @@ from armachat import ui_main
 from armachat import ui_setup
 from armachat import ui_splash
 
-import displayio
-import adafruit_imageload
+import storage
+import supervisor
 
 keypad = keyboard.keyboard()
 display = display.display()
@@ -36,6 +36,9 @@ print(melody_list)
 # melodyIdx = (len(melody_list) -1)
 # sound.play_melody(melodyIdx)
 
+# if not connected to USB, set the filesystem to read/write
+if not supervisor.runtime.usb_connected:
+    storage.remount("/", False)  # RW
 
 while True:
     k = gui_main.show()

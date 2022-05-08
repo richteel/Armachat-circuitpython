@@ -1,7 +1,7 @@
 import os
 
 unitName = "ARMACHAT"
-module = 915
+region = "Unset"
 freq = 915.0
 power = 23
 
@@ -29,13 +29,13 @@ hopLimit = 3
 password = "Sixteen byte key"
 passwordIv = "Sixteen byte key"
 bright = 4
-sleep = 1
+sleep = 0
 font = 2
 theme = 1
 
-volume = 6
+volume = 4
 tone = 5000
-melody = 30
+melody = 0
 
 '''
 Models
@@ -74,14 +74,32 @@ config_includeTypes = {
 }
 
 loraProfiles = [
-    {"profile": 1, "modemPreset": (0x92, 0x74, 0x04), "modemPresetConfig": "Bw500Cr45Sf128", "modemPresetDescription": "Short/Fast"},
-    {"profile": 2, "modemPreset": (0x72, 0x74, 0x04), "modemPresetConfig": "Bw125Cr45Sf128", "modemPresetDescription": "Short/Slow"},
-    {"profile": 3, "modemPreset": (0x82, 0xA4, 0x04), "modemPresetConfig": "Bw250Cr47Sf1024", "modemPresetDescription": "Medium/Fast"},
-    {"profile": 4, "modemPreset": (0x84, 0xB4, 0x04), "modemPresetConfig": "Bw250Cr46Sf2048", "modemPresetDescription": "Medium/Slow"},
-    {"profile": 5, "modemPreset": (0x48, 0x94, 0x04), "modemPresetConfig": "Bw31_25Cr48Sf512", "modemPresetDescription": "Long/Fast"},
-    {"profile": 6, "modemPreset": (0x78, 0xC4, 0x0C), "modemPresetConfig": "Bw125Cr48Sf4096", "modemPresetDescription": "Long/Slow"},
+    {"profile": 1, "modemPreset": (0x92, 0x74, 0x04), "modemPresetConfig": "Bw500Cr45Sf128", "modemPresetDescription": "Short/Fast", "bw": 500},
+    {"profile": 2, "modemPreset": (0x72, 0x74, 0x04), "modemPresetConfig": "Bw125Cr45Sf128", "modemPresetDescription": "Short/Slow", "bw": 125},
+    {"profile": 3, "modemPreset": (0x82, 0xA4, 0x04), "modemPresetConfig": "Bw250Cr47Sf1024", "modemPresetDescription": "Medium/Fast", "bw": 250},
+    {"profile": 4, "modemPreset": (0x84, 0xB4, 0x04), "modemPresetConfig": "Bw250Cr46Sf2048", "modemPresetDescription": "Medium/Slow", "bw": 250},
+    {"profile": 5, "modemPreset": (0x48, 0x94, 0x04), "modemPresetConfig": "Bw31_25Cr48Sf512", "modemPresetDescription": "Long/Fast", "bw": 31.25},
+    {"profile": 6, "modemPreset": (0x78, 0xC4, 0x0C), "modemPresetConfig": "Bw125Cr48Sf4096", "modemPresetDescription": "Long/Slow", "bw": 125},
 ]
 
+regions = [
+    {"region": "US", "freqCenter": 915, "freqStart": 902, "freqEnd": 928, "dutyCycle": 100, "spacing": 0, "powerLimit": 30},
+    {"region": "EU433", "freqCenter": 433.5, "freqStart": 433, "freqEnd": 434, "dutyCycle": 10, "spacing": 0, "powerLimit": 12},
+    {"region": "EU868", "freqCenter": 869.525, "freqStart": 869.4, "freqEnd": 869.65, "dutyCycle": 10, "spacing": 0, "powerLimit": 16},
+    {"region": "CN", "freqCenter": 490, "freqStart": 470, "freqEnd": 510, "dutyCycle": 100, "spacing": 0, "powerLimit": 19},
+    {"region": "JP", "freqCenter": 924.3, "freqStart": 920.8, "freqEnd": 927.8, "dutyCycle": 100, "spacing": 0, "powerLimit": 16},
+    {"region": "ANZ", "freqCenter": 921.5, "freqStart": 915, "freqEnd": 928, "dutyCycle": 100, "spacing": 0, "powerLimit": 30},
+    {"region": "RU", "freqCenter": 868.95, "freqStart": 868.7, "freqEnd": 869.2, "dutyCycle": 100, "spacing": 0, "powerLimit": 20},
+    {"region": "KR", "freqCenter": 921.5, "freqStart": 920, "freqEnd": 923, "dutyCycle": 100, "spacing": 0, "powerLimit": 0},
+    {"region": "TW", "freqCenter": 922.5, "freqStart": 920, "freqEnd": 925, "dutyCycle": 100, "spacing": 0, "powerLimit": 0},
+    {"region": "IN", "freqCenter": 866, "freqStart": 865, "freqEnd": 867, "dutyCycle": 100, "spacing": 0, "powerLimit": 30},
+    {"region": "NZ865", "freqCenter": 866, "freqStart": 864, "freqEnd": 868, "dutyCycle": 100, "spacing": 0, "powerLimit": 0},
+    {"region": "TH", "freqCenter": 922.5, "freqStart": 920, "freqEnd": 925, "dutyCycle": 100, "spacing": 0, "powerLimit": 16},
+    {"region": "Unset", "freqCenter": 915, "freqStart": 902, "freqEnd": 928, "dutyCycle": 100, "spacing": 0, "powerLimit": 30},
+]
+
+def printValue(name, val):
+    print(name +" (", type, ") -> ", val)
 
 def fileExists(fileName):
     retVal = False
@@ -176,6 +194,13 @@ def writeConfig():
     if len(config_settings) == 0:
         getConfigProperties()
 
+    # Create dict to track if items have been saved
+    configTrackDict = {}
+    for k in config_settings:
+        configTrackDict[k] = False
+
+    printValue("configTrackDict", configTrackDict)
+
     if not fileSystemWriteMode():
         print("Cannot write config file.")
         print("Enable Write mode on device boot.")
@@ -195,58 +220,51 @@ def writeConfig():
     # if the config file exists, rename it then delete it
     if fileExists(CONFIG_FILENAME):
         os.rename(CONFIG_FILENAME, CONFIG_FILENAME + ".old")
+    
+    
+    with open(CONFIG_FILENAME, "w") as f_new:
+        # if a previous config file exists, keep comments and formats for existing values
+        if fileExists(CONFIG_FILENAME + ".old"):
+            with open(CONFIG_FILENAME + ".old", "r") as f_old:
+                    conf_old = f_old.readlines()
+                    for line in conf_old:
+                        if line.strip().startswith("#"):  # Comment
+                            writeConfigLine(f_new, line)
+                            continue
 
-    # Create dict to track if items have been saved
-    configTrackDict = {}
-    for k in config_settings:
-        configTrackDict[k] = False
+                        keyvalPair = line.split("=")
+                        if(len(keyvalPair) != 2):  # Not key value pair
+                            writeConfigLine(f_new, line)
+                            continue
 
-    with open(CONFIG_FILENAME + ".old", "r") as f_old:
-        with open(CONFIG_FILENAME, "w") as f_new:
-            conf_old = f_old.readlines()
-            for line in conf_old:
-                if line.strip().startswith("#"):  # Comment
-                    if line.endswith("\n"):
-                        f_new.write(line)
-                    else:
-                        f_new.write(line + "\n")
-                    continue
+                        key = keyvalPair[0].strip()
 
-                keyvalPair = line.split("=")
-                if(len(keyvalPair) != 2):  # Not key value pair
-                    if line.endswith("\n"):
-                        f_new.write(line)
-                    else:
-                        f_new.write(line + "\n")
-                    continue
+                        if key not in config_settings:  # Ignore key is not a setting
+                            writeConfigLine(f_new, line)
+                        elif isinstance(globals()[key], str):
+                            writeConfigLine(f_new, key + " = \"" + globals()[key] + "\"")
+                            configTrackDict[key] = True
+                        else:
+                            writeConfigLine(f_new, key + " = " + str(globals()[key]))
+                            configTrackDict[key] = True
 
-                key = keyvalPair[0].strip()
-
-                if key not in config_settings:  # Ignore key is not a setting
-                    if line.endswith("\n"):
-                        f_new.write(line)
-                    else:
-                        f_new.write(line + "\n")
-                    continue
-
-                if isinstance(globals()[key], str):
-                    f_new.write(key + " = \"" + globals()[key] + "\"\n")
-                    configTrackDict[key] = True
+        for dkey, dval in configTrackDict.items():
+            if not dval:
+                if isinstance(globals()[dkey], str):
+                    writeConfigLine(f_new, dkey + " = \"" + globals()[dkey] + "\"")
                 else:
-                    f_new.write(key + " = " + str(globals()[key]) + "\n")
-                    configTrackDict[key] = True
-
-            for dkey, dval in configTrackDict.items():
-                if not dval:
-                    if isinstance(globals()[dkey], str):
-                        f_new.write(dkey + " = \"" + globals()[dkey] + "\"\n")
-                    else:
-                        f_new.write(dkey + " = " + str(globals()[dkey]) + "\n")
+                    writeConfigLine(f_new, dkey + " = " + str(globals()[dkey]))
 
     if fileExists(CONFIG_FILENAME + ".old"):
         os.remove(CONFIG_FILENAME + ".old")
 
     return True
+
+def writeConfigLine(f, line):
+    if line.endswith("\n"):
+        f.write(line)
+    else:
+        f.write(line + "\n")
 
 
 # print("--- Default Settings ---")

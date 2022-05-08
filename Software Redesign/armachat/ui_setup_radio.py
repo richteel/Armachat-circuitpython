@@ -12,7 +12,7 @@ class ui_setup_radio(ui_screen):
         lines26 = [
             Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
             Line("0 Radio:", SimpleTextDisplay.GREEN),
-            Line("[M] Module: %module% MHz", SimpleTextDisplay.WHITE),
+            Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
             Line("[F] Frequency: %freq% MHz", SimpleTextDisplay.WHITE),
             Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
             Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
@@ -24,7 +24,7 @@ class ui_setup_radio(ui_screen):
         lines20 = [
             Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
             Line("0 Radio:", SimpleTextDisplay.GREEN),
-            Line("[M] Module: %module% MHz", SimpleTextDisplay.WHITE),
+            Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
             Line("[F] Freq: %freq% MHz", SimpleTextDisplay.WHITE),
             Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
             Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
@@ -62,6 +62,20 @@ class ui_setup_radio(ui_screen):
                     elif keypress["key"] == "bsp":
                         self.vars.sound.ring()
                         return keypress
+                    elif keypress["key"] == "r":
+                        pass
+                    elif keypress["key"] == "f":
+                        pass
+                    elif keypress["key"] == "p":
+                        pass
+                    elif keypress["key"] == "s":
+                        self.vars.sound.ring()
+                        if keypress["longPress"]:
+                            config.loraProfile = self.changeValInt(config.loraProfile, 1, 6, -1)
+                        else:
+                            config.loraProfile = self.changeValInt(config.loraProfile, 1, 6)
+                        config.writeConfig()
+                        self._show_screen()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress

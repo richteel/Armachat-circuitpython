@@ -1,0 +1,6 @@
+
+
+class debug(object):
+    @staticmethod
+    def printValue(name, val):
+        print(name +" (", type, ") -> ", val)

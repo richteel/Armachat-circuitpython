@@ -1,6 +1,7 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
+import storage
 
 class ui_hw_info(ui_screen):
     def __init__(self, ac_vars):
@@ -16,7 +17,7 @@ class ui_hw_info(ui_screen):
             Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
             Line("CPU Temp: %cpuTemp% degrees C", SimpleTextDisplay.WHITE),
             Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
+            Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
             Line("[ALT] Exit", SimpleTextDisplay.RED)
         ]
         lines20 = [
@@ -28,7 +29,7 @@ class ui_hw_info(ui_screen):
             Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
             Line("CPU Temp: %cpuTemp% C", SimpleTextDisplay.WHITE),
             Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
+            Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
             Line("[ALT] Exit", SimpleTextDisplay.RED)
         ]
         self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
