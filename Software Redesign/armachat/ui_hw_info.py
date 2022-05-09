@@ -1,7 +1,6 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
-import storage
 
 class ui_hw_info(ui_screen):
     def __init__(self, ac_vars):

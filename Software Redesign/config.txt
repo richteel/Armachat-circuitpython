@@ -19,6 +19,8 @@ tone = 5000
 melody = 30
 
 # LoRa Profile may be from 1 to 6
+# Matches Mestastic values in table at
+# https://meshtastic.org/docs/settings/channel
 #	1 = Bw500Cr45Sf128       Short/Fast
 #	2 = Bw125Cr45Sf128       Short/Slow
 #	3 = Bw250Cr47Sf1024      Medium/Fast
@@ -33,7 +35,9 @@ region = "US"
 # Frequency values are dependant on the module freq
 freq = 915.0
 
-power = 23
+# Power values may be 5 to 23
+power = 5
+
 theme = 1
 hopLimit = 3
 myName = "DemoUser"

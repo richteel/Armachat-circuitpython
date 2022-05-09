@@ -14,7 +14,7 @@ import digitalio
 import gc
 import os
 import microcontroller
-from config import config
+from armachat import config
 from adafruit_st7789 import ST7789
 from adafruit_st7735r import ST7735R
 from pwmio import PWMOut
@@ -264,15 +264,6 @@ def get_FreeSpaceKb():
 
 def get_FreeRam():
     return gc.mem_free()
-
-def get_lora_profile_val(key, profile=config.loraProfile):
-    if profile > len(config.loraProfiles):
-        return None
-    
-    if key not in("profile", "modemPreset", "modemPresetConfig", "modemPresetDescription"):
-        return None
-    
-    return config.loraProfiles[profile - 1][key]
 
 def get_VSYSvoltage():
     VSYSin = ((VSYS_voltage.value * 3.3) / 65536) * 3

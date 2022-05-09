@@ -2,7 +2,7 @@ from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_setup_sound import ui_setup_sound as ui_setup_sound
-from config import config
+from armachat import config
 
 class ui_setup_display(ui_screen):
     def __init__(self, ac_vars):

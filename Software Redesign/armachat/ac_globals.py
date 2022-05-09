@@ -1,4 +1,4 @@
-from config import config
+from armachat import config
 from armachat import ac_address
 
 class ac_globals(object):

@@ -2,7 +2,7 @@ import gc
 import supervisor
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
-from config import config
+from armachat import config
 from armachat import hw
 
 Line = namedtuple('Line', ['text', 'color'])
@@ -29,6 +29,7 @@ class ui_screen(object):
     def _get_vars(self):
         return {
             "%freq%": "{:5.2f}".format(config.freq),
+            "%channel%": str(config.getChannel()),
             "%RW%": self.fs_rw,
             "%RWlong%": self.fs_rw_long,
             "%myAddress%": str(config.myAddress),
@@ -41,8 +42,8 @@ class ui_screen(object):
             "%region%": config.region,
             "%power%": str(config.power),
             "%profile%": str(config.loraProfile),
-            "%profileName%": hw.get_lora_profile_val("modemPresetConfig"),
-            "%profileDesc%": hw.get_lora_profile_val("modemPresetDescription"),
+            "%profileName%": config.loraProfiles[config.loraProfile - 1]["modemPresetConfig"],
+            "%profileDesc%": config.loraProfiles[config.loraProfile - 1]["modemPresetDescription"],
             "%vsys%": "{:5.2f} V".format(hw.get_VSYSvoltage()),
             "%usbConnected%": "USB power connected" if hw.VBUS_status.value else "No USB power",
             "%diskSize%": "{:,.1f}".format(hw.get_DiskSpaceKb()),

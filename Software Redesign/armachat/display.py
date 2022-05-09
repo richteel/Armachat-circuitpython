@@ -1,6 +1,6 @@
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat import hw
-from config import config
+from armachat import config
 import time
 
 class display(object):

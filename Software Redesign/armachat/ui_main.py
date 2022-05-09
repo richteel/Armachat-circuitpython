@@ -1,6 +1,7 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
+import supervisor
 
 class ui_main(ui_screen):
     def __init__(self, ac_vars):
@@ -15,7 +16,7 @@ class ui_main(ui_screen):
             Line("[M] Messages > ALL:%countMessagesAll%", SimpleTextDisplay.WHITE),
             Line("New:%countMessagesNew% Undelivered:%countMessagesUndel%", SimpleTextDisplay.WHITE),
             Line("[ ]          [I] HW Info", SimpleTextDisplay.WHITE),
-            Line("[ ]          [P] Ping", SimpleTextDisplay.WHITE),
+            Line("[R] Reset    [P] Ping", SimpleTextDisplay.WHITE),
             Line("[T] Terminal [S] Setup", SimpleTextDisplay.WHITE),
             Line("Ready ...", SimpleTextDisplay.RED)
         ]
@@ -27,7 +28,7 @@ class ui_main(ui_screen):
             Line("[M] Messages>A:%countMessages_all%", SimpleTextDisplay.WHITE),
             Line("New:%countMessages_new% Undeliv:%countMessages_undel%", SimpleTextDisplay.WHITE),
             Line("[ ]       [I] HW Inf", SimpleTextDisplay.WHITE),
-            Line("[ ]       [P] Ping", SimpleTextDisplay.WHITE),
+            Line("[R] Reset [P] Ping", SimpleTextDisplay.WHITE),
             Line("[T] Term  [S] Setup", SimpleTextDisplay.WHITE),
             Line("Ready ...", SimpleTextDisplay.RED)
         ]
@@ -67,6 +68,8 @@ class ui_main(ui_screen):
                         
                         self.vars.sound.ring()
                         self._show_screen()
+                    elif keypress["key"] == "r":
+                        supervisor.reload()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress

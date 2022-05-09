@@ -1,11 +1,7 @@
 import gc
-from config import config
+from armachat import config
 from armachat import hw
-from armachat import melody as melody
-# from armachat import melody1 as melody
-# from armachat import melody2 as melody
-# from armachat import melody3 as melody
-# from armachat import melodyXmas as melody
+from armachat import ringtone as melody
 import time
 from pwmio import PWMOut
 

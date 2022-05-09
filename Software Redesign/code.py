@@ -30,7 +30,7 @@ gui_splash.show()
 
 
 melody_list = sound.get_melodyNames()
-print(melody_list)
+# print(melody_list)
 
 # sound.play_melody(len(melody_list) -1)
 # melodyIdx = (len(melody_list) -1)

@@ -2,7 +2,7 @@ from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_setup_id import ui_setup_id as ui_setup_id
-from config import config
+from armachat import config
 
 class ui_setup_radio(ui_screen):
     def __init__(self, ac_vars):
@@ -14,11 +14,11 @@ class ui_setup_radio(ui_screen):
             Line("0 Radio:", SimpleTextDisplay.GREEN),
             Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
             Line("[F] Frequency: %freq% MHz", SimpleTextDisplay.WHITE),
+            Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
             Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
             Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
             Line("%profileName%", SimpleTextDisplay.WHITE),
             Line("%profileDesc%", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
             Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
         ]
         lines20 = [
@@ -26,11 +26,11 @@ class ui_setup_radio(ui_screen):
             Line("0 Radio:", SimpleTextDisplay.GREEN),
             Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
             Line("[F] Freq: %freq% MHz", SimpleTextDisplay.WHITE),
+            Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
             Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
             Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
             Line("%profileName%", SimpleTextDisplay.WHITE),
             Line("%profileDesc%", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
             Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
         ]
         self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
@@ -65,16 +65,47 @@ class ui_setup_radio(ui_screen):
                     elif keypress["key"] == "r":
                         pass
                     elif keypress["key"] == "f":
-                        pass
-                    elif keypress["key"] == "p":
-                        pass
-                    elif keypress["key"] == "s":
-                        self.vars.sound.ring()
+                        preval = config.freq
+                        config.setFreqToCenterOfChannel()
+                        channelWidth = config.getChannelWidth()
+
                         if keypress["longPress"]:
-                            config.loraProfile = self.changeValInt(config.loraProfile, 1, 6, -1)
+                            config.freq = config.freq - channelWidth
                         else:
-                            config.loraProfile = self.changeValInt(config.loraProfile, 1, 6)
-                        config.writeConfig()
+                            config.freq = config.freq + channelWidth
+                        config.validateSetting("freq")
+                        if preval != config.freq:
+                            config.writeConfig()
+                            self.vars.sound.ring()
+                        else:
+                            self.vars.sound.beep()
+                        self._show_screen()
+                    elif keypress["key"] == "p":
+                        preval = config.power
+                        if keypress["longPress"]:
+                            config.power = self.changeValInt(config.power, 5, 23 , -1)
+                        else:
+                            config.power = self.changeValInt(config.power, 5, 23)
+                        config.validateSetting("power")
+                        if preval != config.power:
+                            config.writeConfig()
+                            self.vars.sound.ring()
+                        else:
+                            self.vars.sound.beep()
+                        self._show_screen()
+                    elif keypress["key"] == "s":
+                        preval = config.loraProfile
+                        if keypress["longPress"]:
+                            config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles) , -1)
+                        else:
+                            config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles))
+                        config.validateSetting("loraProfile")
+                        if preval != config.loraProfile:
+                            config.setFreqToCenterOfChannel()
+                            config.writeConfig()
+                            self.vars.sound.ring()
+                        else:
+                            self.vars.sound.beep()
                         self._show_screen()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
