@@ -34,6 +34,13 @@ class ui_setup_radio(ui_screen):
             Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
         ]
         self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
+
+    def getRegionIndex(self, region):
+        for r in range(len(config.regions)):
+            if config.regions[r]["region"] == region:
+                return r
+        
+        return None
         
     def show(self):
         self.line_index = 0
@@ -63,7 +70,23 @@ class ui_setup_radio(ui_screen):
                         self.vars.sound.ring()
                         return keypress
                     elif keypress["key"] == "r":
-                        pass
+                        preval = config.region
+                        regionIdx = self.getRegionIndex(config.region)
+
+                        if keypress["longPress"]:
+                            if regionIdx > 0:
+                                config.region = config.regions[regionIdx - 1]["region"]
+                        else:
+                            if regionIdx + 1 < len(config.regions):
+                                config.region = config.regions[regionIdx + 1]["region"]
+                        config.setFreqToCenterFreq()
+                        config.validateAllSettings()
+                        if preval != config.region:
+                            config.writeConfig()
+                            self.vars.sound.ring()
+                        else:
+                            self.vars.sound.beep()
+                        self._show_screen()
                     elif keypress["key"] == "f":
                         preval = config.freq
                         config.setFreqToCenterOfChannel()

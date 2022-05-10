@@ -33,7 +33,7 @@ loraProfile = 1
 region = "US"
 
 # Frequency values are dependant on the module freq
-freq = 915.0
+freq = 915.25
 
 # Power values may be 5 to 23
 power = 5
@@ -48,3 +48,4 @@ password = "Sixteen byte key"
 myAddress = "12-36-124-3"
 unitName = "ARMACHAT"
 passwordIv = "Sixteen byte key"
+model = "compact"

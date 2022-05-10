@@ -232,6 +232,13 @@ def readConfig(createIfNotExists=False):
 
     return True
 
+def setFreqToCenterFreq():
+    regionObj = getRegion()
+    globals()["freq"] = (regionObj["freqEnd"] + regionObj["freqStart"])/2
+    print("globals()[\"freq\"] -> ", globals()["freq"])
+    setFreqToCenterOfChannel()
+    print("globals()[\"freq\"] -> ", globals()["freq"])
+
 def setFreqToCenterOfChannel():
     regionObj = getRegion()
     channel = getChannel()
