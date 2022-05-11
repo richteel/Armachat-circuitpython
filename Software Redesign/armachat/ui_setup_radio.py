@@ -41,6 +41,46 @@ class ui_setup_radio(ui_screen):
                 return r
         
         return None
+
+    def _getNextBestProfile(self, step=1):
+        print("Entered _getNextBestProfile()")
+        region = config.getRegion()
+        profile = config.getProfile()
+
+        if region is None or profile is None:
+            return
+
+        regionBW = (region["freqEnd"] - region["freqStart"]) * 1000
+        profileBW = profile["bw"]
+
+        print("config.region -> ", config.region)
+        print("regionBW -> ", regionBW)
+        print("config.loraProfile -> ", config.loraProfile)
+        print("profileBW -> ", profileBW)
+
+
+        # while config.loraProfile > 0 and config.loraProfile < len(config.loraProfiles):
+        loopCount = 0
+        dirMult = 1
+        while profileBW > regionBW and loopCount < 2 * len(config.loraProfiles):
+            print("Entered _getNextBestProfile() loop")
+            nextVal = config.loraProfile + (dirMult * step)
+            if nextVal < 1 or nextVal > len(config.loraProfiles):
+                dirMult = dirMult * -1
+                nextVal = config.loraProfile + (dirMult * step)
+            
+            config.loraProfile = nextVal
+            profile = config.getProfile()
+            profileBW = profile["bw"]
+
+            print("config.region -> ", config.region)
+            print("regionBW -> ", regionBW)
+            print("config.loraProfile -> ", config.loraProfile)
+            print("profileBW -> ", profileBW)
+            print("loopCount -> ", loopCount)
+            
+            loopCount += 1
+
         
     def show(self):
         self.line_index = 0
@@ -69,24 +109,6 @@ class ui_setup_radio(ui_screen):
                     elif keypress["key"] == "bsp":
                         self.vars.sound.ring()
                         return keypress
-                    elif keypress["key"] == "r":
-                        preval = config.region
-                        regionIdx = self.getRegionIndex(config.region)
-
-                        if keypress["longPress"]:
-                            if regionIdx > 0:
-                                config.region = config.regions[regionIdx - 1]["region"]
-                        else:
-                            if regionIdx + 1 < len(config.regions):
-                                config.region = config.regions[regionIdx + 1]["region"]
-                        config.setFreqToCenterFreq()
-                        config.validateAllSettings()
-                        if preval != config.region:
-                            config.writeConfig()
-                            self.vars.sound.ring()
-                        else:
-                            self.vars.sound.beep()
-                        self._show_screen()
                     elif keypress["key"] == "f":
                         preval = config.freq
                         config.setFreqToCenterOfChannel()
@@ -116,14 +138,41 @@ class ui_setup_radio(ui_screen):
                         else:
                             self.vars.sound.beep()
                         self._show_screen()
+                    elif keypress["key"] == "r":
+                        preval = config.region
+                        regionIdx = self.getRegionIndex(config.region)
+
+                        if keypress["longPress"]:
+                            if regionIdx > 0:
+                                config.region = config.regions[regionIdx - 1]["region"]
+                                self._getNextBestProfile(-1)
+                        else:
+                            if regionIdx + 1 < len(config.regions):
+                                config.region = config.regions[regionIdx + 1]["region"]
+                                self._getNextBestProfile(1)
+                        
+                        config.validateAllSettings()
+                        if preval != config.region:
+                            config.setFreqToCenterFreq()
+                            config.setFreqToCenterOfChannel()
+                            config.writeConfig()
+                            self.vars.sound.ring()
+                        else:
+                            self.vars.sound.beep()
+                        self._show_screen()
                     elif keypress["key"] == "s":
                         preval = config.loraProfile
+                        step = 1
                         if keypress["longPress"]:
                             config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles) , -1)
+                            self._getNextBestProfile(-1)
                         else:
                             config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles))
-                        config.validateSetting("loraProfile")
+                            self._getNextBestProfile(1)
+                        
+                        config.validateAllSettings()
                         if preval != config.loraProfile:
+                            config.setFreqToCenterFreq()
                             config.setFreqToCenterOfChannel()
                             config.writeConfig()
                             self.vars.sound.ring()

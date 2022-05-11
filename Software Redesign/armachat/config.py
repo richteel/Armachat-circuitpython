@@ -180,6 +180,21 @@ def getRegion():
     
     return None
 
+def isProfileAllowedInRegion():
+    if loraProfile < 1 or loraProfile > len(loraProfiles) - 1:
+        return False
+    
+    regionObj = getRegion()
+    profileObj = getProfile()
+
+    if regionObj is None or profileObj is None:
+            return False
+
+    freqBand = (regionObj["freqEnd"] - regionObj["freqStart"]) * 1000
+    if freqBand < profileObj["bw"]:
+        return False
+    
+    return True
 
 # printConfigProperties is useful for debugging and may be removed
 def printConfigProperties():
@@ -288,6 +303,7 @@ def validateSetting(name):
             regionObj = getRegion()
             if regionObj is not None:
                 globals()["freq"] = regionObj["freqCenter"]
+                setFreqToCenterOfChannel()
                 return False
     elif name == "freq":
         regionObj = getRegion()
@@ -311,21 +327,13 @@ def validateSetting(name):
 
     # need to do one more validation on region and loraProfile
     if name == "region" or name == "loraProfile":
-        regionObj = getRegion()
-        profileObj = getProfile()
-
-        if regionObj is None or profileObj is None:
-            return False
-
-        freqBand = (regionObj["freqEnd"] - regionObj["freqStart"]) * 1000
-        if freqBand < profileObj["bw"]:
+        if not isProfileAllowedInRegion():
             globals()["loraProfile"] = 5  # BW = 31.25 KHz
-            profileObj = getProfile()
-            globals()["freq"] = regionObj["freqCenter"]
+            setFreqToCenterFreq()
+            setFreqToCenterOfChannel()
             return False
 
     return startVal == globals()[name]
-
 
 def writeConfig():
     if len(config_settings) == 0:
