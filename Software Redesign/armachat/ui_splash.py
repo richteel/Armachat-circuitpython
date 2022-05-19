@@ -1,5 +1,6 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
+from armachat import config
 
 from adafruit_display_text import label
 from adafruit_bitmap_font import bitmap_font
@@ -27,7 +28,7 @@ class ui_splash(ui_screen):
 
             font_scale = 2
             char_width = self.vars.display.display.width/(font_width * font_scale)
-            text1 = "ARMACHAT " + self.vars.model.upper()
+            text1 = "ARMACHAT " + config.model.upper()
             padding = " " * int((char_width - len(text1))/2)
             text_area1 = label.Label(
                 terminalio.FONT, text=padding + text1 + padding + " ", scale=font_scale, background_tight=False, background_color=0x000000, color=0xFFFFFF

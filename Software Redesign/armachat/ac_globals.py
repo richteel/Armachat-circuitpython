@@ -1,16 +1,20 @@
 from armachat import config
 from armachat import ac_address
+from armachat import audio
+from armachat import display
+from armachat import keyboard
+from armachat import lora
 
 class ac_globals(object):
-    def __init__(self, display, keypad, sound, radio):
-        self.display = display
-        self.keypad = keypad
-        self.sound = sound
-        self.radio = radio
+    def __init__(self):
+        self.keypad = keyboard.keyboard()
+        self.display = display.display()
+        self.sound = audio.audio(self.keypad)
+        self.radio = lora.lora()
         self.address_book = self.loadAddressBook()
         self.to_dest_idx = 0
-        self.messages = ["1|2|3|4|5|6|7|8|a1|a2|a3|a4|a5|a6|a7|a8"]
-        self.model = config.model
+        self.messages = []
+        # self.model = config.model
     
     def loadAddressBook(self):
         broadcastAddressList = ac_address.broadcastAddressList(

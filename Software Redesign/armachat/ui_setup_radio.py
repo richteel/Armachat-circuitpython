@@ -94,6 +94,7 @@ class ui_setup_radio(ui_screen):
                 continue
 
             if keypress is not None:
+                self._showGC()
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
                     if keypress["key"] == "alt":

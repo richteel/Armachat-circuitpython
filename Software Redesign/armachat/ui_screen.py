@@ -1,5 +1,9 @@
 import gc
 import supervisor
+import displayio
+import terminalio
+from adafruit_display_text import label
+from adafruit_bitmap_font import bitmap_font
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat import config
@@ -15,6 +19,16 @@ class ui_screen(object):
         self.line_index = 0
         self.fs_rw = "??"
         self.fs_rw_long = "??"
+        self.editor = { 
+            "action": "",
+            "cursorPos": 0,
+            "cursorPosX": 0,
+            "cursorPosY": 0,
+            "text": "",
+            "maxLines": 0,
+            "maxLen": 0,
+            "validation": "",
+            }
 
     def _countMessages(self, msgStat=""):
         if msgStat is None:
@@ -59,6 +73,13 @@ class ui_screen(object):
             "%sleep%": self.vars.display.get_sleepTime(),
             "%font%": config.font,
             "%theme%": config.theme,
+            "%locked%": "L" if self.vars.keypad.keyLayoutLocked else "U",
+            "%line%": self.editor["cursorPosY"],
+            "%col%": self.editor["cursorPosX"],
+            "%pos%": self.editor["cursorPos"],
+            "%len%": len(self.editor["text"]) - 1,
+            "%keyLayout%": self.vars.keypad.keyLayout,
+            "%action%": self.editor["action"],
         }
 
     def _inc_lines(self, step):
@@ -85,12 +106,15 @@ class ui_screen(object):
             txt = txt.replace(key, str(value))
 
         return txt
-    
-    def _show_screen(self):
+
+    def _showGC(self):
         print("Free RAM: {:,}".format(gc.mem_free()))
         gc.collect()
         print("gc.collect()")
         print("Free RAM: {:,}".format(gc.mem_free()))
+    
+    def _show_screen(self):
+        self._showGC()
         self.fs_rw = "RO"
         self.fs_rw_long = "Read Only"
         if config.fileSystemWriteMode():
@@ -206,3 +230,77 @@ class ui_screen(object):
 
     def show(self):
         raise NotImplementedError
+
+    def showConfirmation(self, message=""):
+        self._showGC()
+        font_width, font_height = terminalio.FONT.get_bounding_box()
+        font_scale = 2
+        char_width = self.vars.display.display.width/(font_width * font_scale) - 2
+        startX = (font_width * font_scale)
+        startY = int((self.vars.display.display.height - (font_height * 3))/2)
+
+        text1 = message if len(message)>0 else self.editor["action"]
+        text1 = self.textCenter(text1, char_width)
+        text2 = "[ENT] Yes [DEL] No"
+        text2 = self.textCenter(text2, char_width)
+        text3 = "[ALT] Cancel"
+        text3 = self.textCenter(text3, char_width)
+
+        # Make the display context
+        splash = displayio.Group(x=startX, y=startY)
+
+        text_area1 = label.Label(
+            terminalio.FONT, text=text1, scale=font_scale, background_tight=False, background_color=0x000066, color=0xFFFFFF
+        )
+        
+        text_area2 = label.Label(
+            terminalio.FONT, text=text2, scale=font_scale, background_tight=False, background_color=0x0000FF, color=0xFFFFFF
+        )
+        text_area2.y = (font_height * font_scale)
+
+        text_area3 = label.Label(
+            terminalio.FONT, text=text3, scale=font_scale, background_tight=False, background_color=0x0000FF, color=0xFFFFFF
+        )
+        text_area3.y = font_height * font_scale * 2
+
+        splash.append(text_area1)
+        splash.append(text_area2)
+        splash.append(text_area3)
+
+        self.vars.keypad.keyLayout = self.vars.keypad.keyboards[0]["layout"]
+
+        # self.vars.display.display.show(splash)
+        self.vars.display.screen.text_group.append(splash)
+        self.vars.display.screen.show()
+
+        while True:
+            self.vars.radio.receive(self.vars)
+            keypress = self.vars.keypad.get_key()
+
+            if self.vars.display.sleepUpdate(keypress):
+                continue
+
+            if keypress is not None:
+                self._showGC()
+                # ent, bsp, or alt
+                if not self.checkKeys(keypress):
+                    if keypress["key"] == "ent":
+                        self.vars.sound.ring()
+                        return "Y"
+                    elif keypress["key"] == "bsp":
+                        self.vars.sound.ring()
+                        return "N"
+                    elif keypress["key"] == "alt":
+                        self.vars.sound.ring()
+                        self.vars.keypad.keyLayout = self.vars.keypad.keyboards[self.vars.keypad.keyboard_current_idx]["layout"]
+                        return None
+                    else:
+                        self.vars.sound.beep()
+
+        # self.vars.keypad.keyLayout = self.vars.keypad.keyboards[self.vars.keypad.keyboard_current_idx]["layout"]
+    
+    
+    def textCenter(self, text, char_width):
+        retText = (" " * int((char_width - len(text))/2)) + text
+        retText += " " * int(char_width - len(retText))
+        return retText

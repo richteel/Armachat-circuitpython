@@ -1,13 +1,14 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
+from armachat.ui_editor import ui_editor as ui_editor
 import supervisor
 
 class ui_main(ui_screen):
     def __init__(self, ac_vars):
         ui_screen.__init__(self, ac_vars)
         
-        self.exit_keys = ['n', 'm', 'i', 'p', 's']
+        self.exit_keys = ['m', 'i', 'p', 's']
         lines26 = [
             Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
             Line(">(%myAddress%)%myName%", SimpleTextDisplay.GREEN),
@@ -48,6 +49,7 @@ class ui_main(ui_screen):
             if keypress is not None:
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
+                    self._showGC()
                     if keypress["key"] == "d":
                         preval = self.vars.to_dest_idx
                         if keypress["longPress"]:
@@ -58,7 +60,19 @@ class ui_main(ui_screen):
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
-                        self._show_screen()
+                    elif keypress["key"] == "n":
+                        self.vars.sound.ring()
+                        gui_editor = ui_editor(self.vars)
+                        gui_editor.editor["action"] = "Send"
+                        gui_editor.editor["maxLines"] = 0
+                        gui_editor.editor["maxLen"] = 256
+                        gui_editor.editor["text"] = ""
+                        
+                        result = gui_editor.show()
+                        if result is not None:
+                            print("New Message -> ", result)
+                    elif keypress["key"] == "r":
+                        supervisor.reload()
                     elif keypress["key"] == "t":
                         self.vars.sound.ring()
                         self.vars.display.screen.show_terminal()
@@ -67,11 +81,10 @@ class ui_main(ui_screen):
                             keypress = self.vars.keypad.get_key()
                         
                         self.vars.sound.ring()
-                        self._show_screen()
-                    elif keypress["key"] == "r":
-                        supervisor.reload()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress
                     else:
                         self.vars.sound.beep()
+                    
+                    self._show_screen()

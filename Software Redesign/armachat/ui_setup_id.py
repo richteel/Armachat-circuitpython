@@ -2,6 +2,7 @@ from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_setup_display import ui_setup_display as ui_setup_display
+from armachat.ui_editor import ui_editor as ui_editor
 from armachat import config
 
 class ui_setup_id(ui_screen):
@@ -49,6 +50,7 @@ class ui_setup_id(ui_screen):
             if keypress is not None:
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
+                    self._showGC()
                     if keypress["key"] == "alt":
                         self.vars.sound.ring()
                         return None
@@ -58,28 +60,33 @@ class ui_setup_id(ui_screen):
                         if gui_setup_next.show() == None:
                             return None
                         self.line_index = 0
-                        self._show_screen()
                     elif keypress["key"] == "bsp":
                         self.vars.sound.ring()
                         return keypress
                     elif keypress["key"] == "n":
                         self.vars.sound.ring()
-                        # TODO
-                        self._show_screen()
+                        gui_editor = ui_editor(self.vars)
+                        gui_editor.editor["action"] = "Save"
+                        gui_editor.editor["maxLines"] = 1
+                        gui_editor.editor["maxLen"] = 16
+                        gui_editor.editor["text"] = config.myName
+                        
+                        result = gui_editor.show()
+                        if result is not None:
+                            config.myName = result
                     elif keypress["key"] == "e":
                         self.vars.sound.ring()
                         # TODO
-                        self._show_screen()
                     elif keypress["key"] == "g":
                         self.vars.sound.ring()
                         # TODO
-                        self._show_screen()
                     elif keypress["key"] == "i":
                         self.vars.sound.ring()
                         # TODO
-                        self._show_screen()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress
                     else:
                         self.vars.sound.beep()
+                    
+                    self._show_screen()

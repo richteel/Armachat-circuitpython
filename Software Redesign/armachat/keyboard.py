@@ -15,32 +15,32 @@ class keyboard(object):
             ({"keys" : hw.keys2, "layout" : "123"})
         ]
 
-        self._keyboard_current_idx = 0
+        self.keyboard_current_idx = 0
 
         self._keypad = adafruit_matrixkeypad.Matrix_Keypad(
                 hw.keypad_rows, hw.keypad_cols,
-                self.keyboards[self._keyboard_current_idx]["keys"]
+                self.keyboards[self.keyboard_current_idx]["keys"]
             )
 
-        self.keyLayout = self.keyboards[self._keyboard_current_idx]["layout"]
+        self.keyLayout = self.keyboards[self.keyboard_current_idx]["layout"]
         self.keyLayoutLocked = False
         self.alt_is_esc = True
 
     def change_keyboardLayout(self, reset=False):
         if reset:
-            self._keyboard_current_idx = 0
+            self.keyboard_current_idx = 0
         else:
-            self._keyboard_current_idx += 1
+            self.keyboard_current_idx += 1
 
-        if self._keyboard_current_idx >= len(self.keyboards):
-            self._keyboard_current_idx = 0
+        if self.keyboard_current_idx >= len(self.keyboards):
+            self.keyboard_current_idx = 0
 
         self._keypad = adafruit_matrixkeypad.Matrix_Keypad(
                 hw.keypad_rows, hw.keypad_cols,
-                self.keyboards[self._keyboard_current_idx]["keys"]
+                self.keyboards[self.keyboard_current_idx]["keys"]
             )
 
-        self.keyLayout = self.keyboards[self._keyboard_current_idx]["layout"]
+        self.keyLayout = self.keyboards[self.keyboard_current_idx]["layout"]
 
     def get_key(self):
         LONG_PRESS_TIME = 0.5
@@ -62,7 +62,8 @@ class keyboard(object):
 
         if pressDuration >= LONG_PRESS_TIME:
             longPress = True
-
+            
+        '''
         if pressedKey == "alt" and not self.alt_is_esc:
             if longPress:
                 self.keyLayoutLocked = not self.keyLayoutLocked
@@ -72,8 +73,9 @@ class keyboard(object):
         elif pressedKey == "alt" and self.alt_is_esc:
             # pressedKey = "esc"
             self.change_keyboardLayout(True)
-        elif not self.keyLayoutLocked and self._keyboard_current_idx != 0:
+        elif not self.keyLayoutLocked and self.keyboard_current_idx != 0:
             self.change_keyboardLayout(True)
+        '''
 
         return {"key" : pressedKey, "longPress" : longPress}
 

@@ -2,11 +2,8 @@
 
 '''
 
+import gc
 from armachat import ac_globals
-from armachat import audio
-from armachat import display
-from armachat import keyboard
-from armachat import lora
 from armachat import ui_hw_info
 from armachat import ui_main
 from armachat import ui_setup
@@ -15,12 +12,7 @@ from armachat import ui_splash
 import storage
 import supervisor
 
-keypad = keyboard.keyboard()
-display = display.display()
-sound = audio.audio(keypad)
-radio = lora.lora()
-
-ac_vars = ac_globals.ac_globals(display, keypad, sound, radio)
+ac_vars = ac_globals.ac_globals()
 gui_splash = ui_splash.ui_splash(ac_vars)
 gui_main = ui_main.ui_main(ac_vars)
 gui_setup = ui_setup.ui_setup(ac_vars)
@@ -28,8 +20,7 @@ gui_hw_info = ui_hw_info.ui_hw_info(ac_vars)
 
 gui_splash.show()
 
-
-melody_list = sound.get_melodyNames()
+# melody_list = sound.get_melodyNames()
 # print(melody_list)
 
 # sound.play_melody(len(melody_list) -1)
@@ -41,6 +32,7 @@ if not supervisor.runtime.usb_connected:
     storage.remount("/", False)  # RW
 
 while True:
+    gc.collect()
     k = gui_main.show()
 
     # ['n', 'm', 'i', 'p', 's']
