@@ -28,6 +28,8 @@ class ui_screen(object):
             "maxLines": 0,
             "maxLen": 0,
             "validation": "",
+            "validationMsg1": "",
+            "validationMsg2": "",
             }
 
     def _countMessages(self, msgStat=""):
@@ -170,7 +172,7 @@ class ui_screen(object):
     def checkKeys(self, keypress):
         handled = False
         
-        print("keypress -> ", keypress)
+        # print("keypress -> ", keypress)
 
         # Navigation for small screens
         if keypress["key"] == "o":
@@ -231,7 +233,7 @@ class ui_screen(object):
     def show(self):
         raise NotImplementedError
 
-    def showConfirmation(self, message=""):
+    def showConfirmation(self, message="", okOnly = False, message2=""):
         self._showGC()
         font_width, font_height = terminalio.FONT.get_bounding_box()
         font_scale = 2
@@ -240,10 +242,14 @@ class ui_screen(object):
         startY = int((self.vars.display.display.height - (font_height * 3))/2)
 
         text1 = message if len(message)>0 else self.editor["action"]
-        text1 = self.textCenter(text1, char_width)
         text2 = "[ENT] Yes [DEL] No"
-        text2 = self.textCenter(text2, char_width)
         text3 = "[ALT] Cancel"
+        if okOnly:
+            text2 = message2
+            text3 = "[ENT] OK"
+
+        text1 = self.textCenter(text1, char_width)
+        text2 = self.textCenter(text2, char_width)
         text3 = self.textCenter(text3, char_width)
 
         # Make the display context
@@ -284,10 +290,10 @@ class ui_screen(object):
                 self._showGC()
                 # ent, bsp, or alt
                 if not self.checkKeys(keypress):
-                    if keypress["key"] == "ent":
+                    if keypress["key"] == "ent" or keypress["key"] == "rt" or keypress["key"] == "dn":
                         self.vars.sound.ring()
                         return "Y"
-                    elif keypress["key"] == "bsp":
+                    elif keypress["key"] == "bsp" or keypress["key"] == "lt" or keypress["key"] == "up":
                         self.vars.sound.ring()
                         return "N"
                     elif keypress["key"] == "alt":

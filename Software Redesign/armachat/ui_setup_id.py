@@ -70,6 +70,9 @@ class ui_setup_id(ui_screen):
                         gui_editor.editor["maxLines"] = 1
                         gui_editor.editor["maxLen"] = 16
                         gui_editor.editor["text"] = config.myName
+                        # gui_editor.editor["validation"] = "^[A-Za-z]*$"
+                        # gui_editor.editor["validationMsg1"] = "Validation Error"
+                        # gui_editor.editor["validationMsg2"] = "Must be characters"
                         
                         result = gui_editor.show()
                         if result is not None:

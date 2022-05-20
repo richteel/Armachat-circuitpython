@@ -1,3 +1,4 @@
+import re
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
@@ -55,12 +56,18 @@ class ui_editor(ui_screen):
             addTxt = " "
         elif txt == "tab":
             addTxt = "\t"
-        elif txt == "\n":
+
+        newText = (self.editor["text"][0:self.editor["cursorPos"]]) + addTxt + (self.editor["text"][self.editor["cursorPos"]:])
+
+        if not self.validateText(newText):
+            return False
+        
+        self.editor["text"] = newText
+        self.editor["cursorPos"] += 1
+        if txt == "\n":
             self.editor["cursorPosY"] += 1
         
-        if len(self.editor["text"]) < self.editor["maxLen"] or self.editor["maxLen"] == 0:
-            self.editor["text"] = (self.editor["text"][0:self.editor["cursorPos"]]) + addTxt + (self.editor["text"][self.editor["cursorPos"]:])
-            self.editor["cursorPos"] += 1
+        return True
 
     def moveCursor(self, x, y):
         self.editor["cursorPosX"] += x
@@ -77,8 +84,7 @@ class ui_editor(ui_screen):
         if self.editor["cursorPosY"] < 0:
             self.editor["cursorPosY"] = 0
         elif self.editor["cursorPosY"] > self.editor["text"].count("\n"):
-            self.editor["text"] += "\n"
-            self.editor["cursorPos"] += 1
+            self.addChar("\n")
 
     def removeChar(self):
         if self.editor["cursorPos"] > 0:
@@ -197,3 +203,28 @@ class ui_editor(ui_screen):
                 self.actionLine26[self.vars.keypad.keyboard_current_idx] \
                 if self.vars.display.width_chars >= 26 \
                 else self.actionLine20[self.vars.keypad.keyboard_current_idx]
+
+    def validateText(self, text):
+        if self.editor["maxLen"] > 0 and len(self.editor["text"]) > self.editor["maxLen"]:
+            self.showConfirmation(message="Text too long", okOnly = True, message2="Max Len=" + str(self.editor["maxLen"]))
+            return False
+        
+        if self.editor["maxLines"] > 0 and text.count("\n") >= self.editor["maxLines"]:
+            self.showConfirmation(message="Too many lines", okOnly = True, message2="Max Lines=" + str(self.editor["maxLines"]))
+            return False
+
+        if len(self.editor["validation"]) > 0:
+            validationPattern = None
+            try:
+                validationPattern = re.compile(self.editor["validation"])
+            
+            except:
+                print("ERROR: Validation RegEx is invalid -> ", self.editor["validation"])
+                print("WARNING: Validation check will return true.")
+                return True
+
+            if not re.match(validationPattern, text):
+                self.showConfirmation(message=self.editor["validationMsg1"], okOnly = True, message2=self.editor["validationMsg2"])
+                return False
+
+        return True
