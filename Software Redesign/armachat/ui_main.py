@@ -2,7 +2,9 @@ from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_editor import ui_editor as ui_editor
+from armachat import config
 import supervisor
+import random
 
 class ui_main(ui_screen):
     def __init__(self, ac_vars):
@@ -35,21 +37,56 @@ class ui_main(ui_screen):
         ]
         self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
 
+    def getFlags(self, f3=0, f2=0, status=0, hopLimit=config.hopLimit):
+        assert isinstance(f3, int), "ERROR: getFlags - f3 is not an int"
+        assert isinstance(f2, int), "ERROR: getFlags - f2 is not an int"
+        assert isinstance(status, int), "ERROR: getFlags - status is not an int"
+        assert isinstance(hopLimit, int), "ERROR: getFlags - hopLimit is not an int"
+
+        assert (
+            f3 >= 0 and f3 < 256
+        ), "ERROR: getFlags - f3 is not between 0 and 255"
+        assert (
+            f2 >= 0 and f2 < 256
+        ), "ERROR: getFlags - f2 is not between 0 and 255"
+        assert (
+            status >= 0 and status < 256
+        ), "ERROR: getFlags - status is not between 0 and 255"
+        assert (
+            hopLimit >= 0 and hopLimit < 256
+        ), "ERROR: getFlags - hopLimit is not between 0 and 255"
+
+        return [
+            f3,
+            f2,
+            status,
+            hopLimit
+        ]
+    
+    def getMessageId(self):
+        if self.vars.messageCount > 255:
+            self.vars.messageCount = 0
+        
+        self.vars.messageCount += 1
+
+        return str(random.randint(0, 255)) + "-" + str(random.randint(0, 255)) + \
+                    "-" + str(random.randint(0, 255)) + "-" + str(self.vars.messageCount - 1)
+
     def show(self):
         self.line_index = 0
         self._show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:
-            self.vars.radio.receive(self.vars)
+            self.receive()
             keypress = self.vars.keypad.get_key()
             if self.vars.display.sleepUpdate(keypress):
                 continue
 
             if keypress is not None:
+                self._showGC()
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
-                    self._showGC()
                     if keypress["key"] == "d":
                         preval = self.vars.to_dest_idx
                         if keypress["longPress"]:
@@ -71,6 +108,23 @@ class ui_main(ui_screen):
                         result = gui_editor.show()
                         if result is not None:
                             print("New Message -> ", result)
+                            toAddress = self.vars.address_book[self.vars.to_dest_idx]["address"]
+                            message = {
+                                        "to": toAddress,
+                                        "from": config.myAddress,
+                                        "id": self.getMessageId(),
+                                        "status": "S",
+                                        "rssi": None,
+                                        "snr": None,
+                                        "timestamp": self.getTimeStamp(),
+                                        "data": result,
+                                        "flag0" : 0,
+                                        "flag1" : 0,
+                                        "flag2" : 0,
+                                        "hops": config.hopLimit,
+                                      }
+                            self.vars.messages.append(message)
+                            self.vars.radio.sendMessage(message)
                     elif keypress["key"] == "r":
                         supervisor.reload()
                     elif keypress["key"] == "t":

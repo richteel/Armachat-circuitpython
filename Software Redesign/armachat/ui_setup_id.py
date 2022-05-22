@@ -42,15 +42,15 @@ class ui_setup_id(ui_screen):
         self.vars.display.sleepUpdate(None, True)
 
         while True:
-            self.vars.radio.receive(self.vars)
+            self.receive()
             keypress = self.vars.keypad.get_key()
             if self.vars.display.sleepUpdate(keypress):
                 continue
 
             if keypress is not None:
+                self._showGC()
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
-                    self._showGC()
                     if keypress["key"] == "alt":
                         self.vars.sound.ring()
                         return None

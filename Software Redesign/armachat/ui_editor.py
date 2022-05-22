@@ -98,7 +98,7 @@ class ui_editor(ui_screen):
         self.vars.display.sleepUpdate(None, True)
 
         while True:
-            self.vars.radio.receive(self.vars)
+            self.receive()
             keypress = self.vars.keypad.get_key()
             if self.vars.display.sleepUpdate(keypress):
                 continue

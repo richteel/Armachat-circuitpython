@@ -1,19 +1,19 @@
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
-from armachat.ui_setup_radio import ui_setup_radio as ui_setup_radio
+from armachat.ui_messages_view import ui_messages_view as ui_messages_view
 from adafruit_simple_text_display import SimpleTextDisplay
 
-class ui_setup(ui_screen):
+class ui_messages(ui_screen):
     def __init__(self, ac_vars):
         ui_screen.__init__(self, ac_vars)
 
         self.exit_keys = []
         lines26 = [
-            Line("Setup", SimpleTextDisplay.GREEN),
-            Line("", SimpleTextDisplay.WHITE),
+            Line("Messages", SimpleTextDisplay.GREEN),
+            Line("Scroll [L]down  [O]up", SimpleTextDisplay.WHITE),
             Line("Pg [ENT]next [DEL]previous", SimpleTextDisplay.WHITE),
+            Line("[SPC] details", SimpleTextDisplay.WHITE),
             Line("[ALT] to exit", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
@@ -21,11 +21,11 @@ class ui_setup(ui_screen):
             Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
         ]
         lines20 = [
-            Line("Setup", SimpleTextDisplay.GREEN),
+            Line("Messages", SimpleTextDisplay.GREEN),
             Line("Scroll [L]dwn  [O]up", SimpleTextDisplay.WHITE),
             Line("Pg [ENT]nxt [DEL]pre", SimpleTextDisplay.WHITE),
+            Line("[SPC] details", SimpleTextDisplay.WHITE),
             Line("[ALT] to exit", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
             Line("", SimpleTextDisplay.WHITE),
@@ -53,7 +53,7 @@ class ui_setup(ui_screen):
                         return None
                     elif keypress["key"] == "ent":
                         self.vars.sound.ring()
-                        gui_setup_next = ui_setup_radio(self.vars)
+                        gui_setup_next = ui_messages_view(self.vars)
                         if gui_setup_next.show() == None:
                             return None
                         self.line_index = 0

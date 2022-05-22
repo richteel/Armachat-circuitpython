@@ -4,7 +4,7 @@ from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_setup_id import ui_setup_id as ui_setup_id
 from armachat import config
 
-class ui_setup_radio(ui_screen):
+class ui_messages_view(ui_screen):
     def __init__(self, ac_vars):
         ui_screen.__init__(self, ac_vars)
 

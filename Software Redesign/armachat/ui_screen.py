@@ -2,8 +2,8 @@ import gc
 import supervisor
 import displayio
 import terminalio
+import time
 from adafruit_display_text import label
-from adafruit_bitmap_font import bitmap_font
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat import config
@@ -31,7 +31,9 @@ class ui_screen(object):
             "validationMsg1": "",
             "validationMsg2": "",
             }
+        self.receiveTimeout = 0.1
 
+    '''
     def _countMessages(self, msgStat=""):
         if msgStat is None:
             return 0
@@ -39,6 +41,16 @@ class ui_screen(object):
         c = 0
         for i in range(allMsg):
             if self.vars.messages[i].count(msgStat) > 0:
+                c = c + 1
+        return c
+    '''
+
+    def _countMessages(self, msgStat=""):
+        if msgStat is None:
+            return 0
+        c = 0
+        for i in range(len(self.vars.messages)):
+            if len(msgStat) == 0 or self.vars.messages[i]["status"] == msgStat:
                 c = c + 1
         return c
     
@@ -53,8 +65,8 @@ class ui_screen(object):
             "%toAddress%": self.vars.address_book[self.vars.to_dest_idx]["address"],
             "%toName%": self.vars.address_book[self.vars.to_dest_idx]["name"],
             "%countMessagesAll%": str(self._countMessages("")),
-            "%countMessagesNew%": str(self._countMessages("|N|")),
-            "%countMessagesUndel%": str(self._countMessages("|S|")),
+            "%countMessagesNew%": str(self._countMessages("N")),
+            "%countMessagesUndel%": str(self._countMessages("S")),
             "%region%": config.region,
             "%power%": str(config.power),
             "%profile%": str(config.loraProfile),
@@ -155,6 +167,31 @@ class ui_screen(object):
                     self._replace_var(self.lines[line].text, screen_vars)
             
         self.vars.display.screen.show()
+        self._showGC()
+
+    def appendMessage(self, message):
+        timeStamp = str(time.monotonic())
+
+        self.vars.messages.append(
+            message["to"]
+            + "|"
+            + message["from"]
+            + "|"
+            + message["id"]
+            + "|"
+            + str(message["hops"]) if message["hops"] is not None else "n/a"
+            + "|"
+            + message["status"]
+            + "|"
+            + str(message["rssi"]) if message["rssi"] is not None else "n/a"
+            + "|"
+            + str(message["snr"]) if message["snr"] is not None else "n/a"
+            + "|"
+            + timeStamp
+            + "|"
+            + str(message["data"]),
+            "utf-8",
+        )
 
     def changeValInt(self, currentval, min, max, step=1, loopval=False):
         newval = currentval
@@ -227,8 +264,21 @@ class ui_screen(object):
 
         return handled
 
+    def getTimeStamp(self):
+        return time.monotonic()
+
     def isUsbConnected(self):
         return supervisor.runtime.usb_connected
+
+    def receive(self):
+        message = self.vars.radio.receive(timeout=self.receiveTimeout)
+
+        if message is not None:
+            self._showGC()
+            self.vars.messages.append(message)
+            self._show_screen()
+            self.vars.sound.play_melody(config.melody)
+            self._showGC()
 
     def show(self):
         raise NotImplementedError
@@ -280,7 +330,7 @@ class ui_screen(object):
         self.vars.display.screen.show()
 
         while True:
-            self.vars.radio.receive(self.vars)
+            self.receive()
             keypress = self.vars.keypad.get_key()
 
             if self.vars.display.sleepUpdate(keypress):
@@ -304,6 +354,7 @@ class ui_screen(object):
                         self.vars.sound.beep()
 
         # self.vars.keypad.keyLayout = self.vars.keypad.keyboards[self.vars.keypad.keyboard_current_idx]["layout"]
+        self._showGC()
     
     
     def textCenter(self, text, char_width):
