@@ -123,7 +123,7 @@ class ui_setup_radio(ui_screen):
                         config.validateSetting("freq")
                         if preval != config.freq:
                             config.writeConfig()
-                            vars.radioInit()
+                            self.vars.radioInit()
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
@@ -137,7 +137,7 @@ class ui_setup_radio(ui_screen):
                         config.validateSetting("power")
                         if preval != config.power:
                             config.writeConfig()
-                            vars.radioInit()
+                            self.vars.radioInit()
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
@@ -160,7 +160,7 @@ class ui_setup_radio(ui_screen):
                             config.setFreqToCenterFreq()
                             config.setFreqToCenterOfChannel()
                             config.writeConfig()
-                            vars.radioInit()
+                            self.vars.radioInit()
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
@@ -180,7 +180,7 @@ class ui_setup_radio(ui_screen):
                             config.setFreqToCenterFreq()
                             config.setFreqToCenterOfChannel()
                             config.writeConfig()
-                            vars.radioInit()
+                            self.vars.radioInit()
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
