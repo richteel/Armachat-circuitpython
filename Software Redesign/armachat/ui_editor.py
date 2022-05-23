@@ -9,6 +9,7 @@ class ui_editor(ui_screen):
 
         self.exit_keys = []
         self.lines = []
+        self.visibleLines = self.vars.display.height_lines - 3
 
         if self.vars.display.width_chars >= 26:
             self.lines = [
@@ -21,7 +22,7 @@ class ui_editor(ui_screen):
                 Line("[%keyLayout%] %line%:%col%/%pos%:%len%", SimpleTextDisplay.YELLOW),
             ]
 
-        for i in range(0, self.vars.display.height_lines - 3):
+        for i in range(0, self.visibleLines):
             self.lines.append(Line("", SimpleTextDisplay.WHITE))
 
         self.lines.append(Line("", SimpleTextDisplay.GREEN))
@@ -38,8 +39,6 @@ class ui_editor(ui_screen):
         ]
 
         self.vars.keypad.alt_is_esc = False
-
-        self.visibleLines = self.vars.display.height_lines - 3
         
         # The following fields are used for validation of the input
         # self.editor["maxLines"]
@@ -94,7 +93,7 @@ class ui_editor(ui_screen):
     def show(self):
         self.line_index = 0
         self.updateDisplay(True)
-        self._show_screen()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:
@@ -143,7 +142,7 @@ class ui_editor(ui_screen):
                         self.vars.keypad.change_keyboardLayout(True)
                 
                 self.updateDisplay(useXY)
-                self._show_screen()
+                self.show_screen()
                 self.vars.sound.ring()
 
     def updateDisplay(self, useXY = False):

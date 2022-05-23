@@ -7,35 +7,36 @@ class ui_hw_info(ui_screen):
         ui_screen.__init__(self, ac_vars)
 
         self.exit_keys = []
-        lines26 = [
-            Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-            Line("System info:", SimpleTextDisplay.GREEN),
-            Line("VSYS power: %vsys% V", SimpleTextDisplay.WHITE),
-            Line("%usbConnected%", SimpleTextDisplay.WHITE),
-            Line("Disk size: %diskSize% KB", SimpleTextDisplay.WHITE),
-            Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
-            Line("CPU Temp: %cpuTemp% degrees C", SimpleTextDisplay.WHITE),
-            Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
-            Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
-            Line("[ALT] Exit", SimpleTextDisplay.RED)
-        ]
-        lines20 = [
-            Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-            Line("System info:", SimpleTextDisplay.GREEN),
-            Line("VSYS power: %vsys% V", SimpleTextDisplay.WHITE),
-            Line("%usbConnected%", SimpleTextDisplay.WHITE),
-            Line("Disk size: %diskSize% KB", SimpleTextDisplay.WHITE),
-            Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
-            Line("CPU Temp: %cpuTemp% C", SimpleTextDisplay.WHITE),
-            Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
-            Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
-            Line("[ALT] Exit", SimpleTextDisplay.RED)
-        ]
-        self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
+                Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
+                Line("System info:", SimpleTextDisplay.GREEN),
+                Line("VSYS power: %vsys% V", SimpleTextDisplay.WHITE),
+                Line("%usbConnected%", SimpleTextDisplay.WHITE),
+                Line("Disk size: %diskSize% KB", SimpleTextDisplay.WHITE),
+                Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
+                Line("CPU Temp: %cpuTemp% degrees C", SimpleTextDisplay.WHITE),
+                Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
+                Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
+                Line("[ALT] Exit", SimpleTextDisplay.RED)
+            ]
+        else:
+            self.lines = [
+                Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
+                Line("System info:", SimpleTextDisplay.GREEN),
+                Line("VSYS power: %vsys% V", SimpleTextDisplay.WHITE),
+                Line("%usbConnected%", SimpleTextDisplay.WHITE),
+                Line("Disk size: %diskSize% KB", SimpleTextDisplay.WHITE),
+                Line("Free space: %freeSpace% KB", SimpleTextDisplay.WHITE),
+                Line("CPU Temp: %cpuTemp% C", SimpleTextDisplay.WHITE),
+                Line("Free RAM: %freeRam%", SimpleTextDisplay.WHITE),
+                Line("FS Mode: %RWlong%", SimpleTextDisplay.WHITE),
+                Line("[ALT] Exit", SimpleTextDisplay.RED)
+            ]
         
     def show(self):
         self.line_index = 0
-        self._show_screen()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:

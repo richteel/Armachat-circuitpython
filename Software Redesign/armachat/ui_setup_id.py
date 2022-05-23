@@ -10,35 +10,36 @@ class ui_setup_id(ui_screen):
         ui_screen.__init__(self, ac_vars)
 
         self.exit_keys = []
-        lines26 = [
-            Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-            Line("1 Identity:", SimpleTextDisplay.GREEN),
-            Line("[N] Name: %myName%", SimpleTextDisplay.WHITE),
-            Line("------", SimpleTextDisplay.WHITE),
-            Line("[E] Encryption {}", SimpleTextDisplay.WHITE),
-            Line("[G] Group 3:3", SimpleTextDisplay.WHITE),
-            Line("[G] Group 2:2", SimpleTextDisplay.WHITE),
-            Line("[G] Group 1:1", SimpleTextDisplay.WHITE),
-            Line("[I] ID:     1", SimpleTextDisplay.WHITE),
-            Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
-        ]
-        lines20 = [
-            Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-            Line("1 Identity:", SimpleTextDisplay.GREEN),
-            Line("[N] Name: %myName%", SimpleTextDisplay.WHITE),
-            Line("------", SimpleTextDisplay.WHITE),
-            Line("[E] Encryption {}", SimpleTextDisplay.WHITE),
-            Line("[G] Group 3:3", SimpleTextDisplay.WHITE),
-            Line("[G] Group 2:2", SimpleTextDisplay.WHITE),
-            Line("[G] Group 1:1", SimpleTextDisplay.WHITE),
-            Line("[I] ID:     1", SimpleTextDisplay.WHITE),
-            Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
-        ]
-        self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
+                Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
+                Line("1 Identity:", SimpleTextDisplay.GREEN),
+                Line("[N] Name: %myName%", SimpleTextDisplay.WHITE),
+                Line("------", SimpleTextDisplay.WHITE),
+                Line("[E] Encryption {}", SimpleTextDisplay.WHITE),
+                Line("[G] Group 3:3", SimpleTextDisplay.WHITE),
+                Line("[G] Group 2:2", SimpleTextDisplay.WHITE),
+                Line("[G] Group 1:1", SimpleTextDisplay.WHITE),
+                Line("[I] ID:     1", SimpleTextDisplay.WHITE),
+                Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
+            ]
+        else:
+            self.lines = [
+                Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
+                Line("1 Identity:", SimpleTextDisplay.GREEN),
+                Line("[N] Name: %myName%", SimpleTextDisplay.WHITE),
+                Line("------", SimpleTextDisplay.WHITE),
+                Line("[E] Encryption {}", SimpleTextDisplay.WHITE),
+                Line("[G] Group 3:3", SimpleTextDisplay.WHITE),
+                Line("[G] Group 2:2", SimpleTextDisplay.WHITE),
+                Line("[G] Group 1:1", SimpleTextDisplay.WHITE),
+                Line("[I] ID:     1", SimpleTextDisplay.WHITE),
+                Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
+            ]
         
     def show(self):
         self.line_index = 0
-        self._show_screen()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:
@@ -92,4 +93,4 @@ class ui_setup_id(ui_screen):
                     else:
                         self.vars.sound.beep()
                     
-                    self._show_screen()
+                    self.show_screen()

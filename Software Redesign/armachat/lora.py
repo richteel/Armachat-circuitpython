@@ -1,7 +1,9 @@
 import time
 import adafruit_bus_device.spi_device as spidev
+import aesio
 from armachat import ac_address
 from armachat import ac_log
+from armachat import config
 
 # Constants
 FLAGS_ACK = 0x80
@@ -192,6 +194,33 @@ class LoRa(object):
 
         self._spi_write(REG_09_PA_CONFIG, PA_SELECT | (self._tx_power - 5))
 
+    def decryptMessage(self, data):
+        cipher = aesio.AES(
+            bytes(config.password, "utf-8"),
+            aesio.MODE_CTR,
+            bytes(config.passwordIv, "utf-8"),
+        )
+        inp = bytes(data)
+        outp = bytearray(len(inp))
+        cipher.encrypt_into(inp, outp)
+
+        try:
+            packet_text = str(outp, "utf-8")
+            return packet_text
+        except UnicodeError as e:
+            return ""
+
+    def encryptMessage(self, messageText):
+        outp = bytearray(len(messageText))
+        cipher = aesio.AES(
+            bytes(config.password, "utf-8"),
+            aesio.MODE_CTR,
+            bytes(config.passwordIv, "utf-8"),
+        )
+        cipher.encrypt_into(bytes(messageText, "utf-8"), outp)
+
+        return outp
+
     def on_recv(self, message):
         # This should be overridden by the user
         pass
@@ -259,7 +288,7 @@ class LoRa(object):
     def sendMessage(self, message):
         return self.send(
                             ac_address.addressToList(message["to"]), 
-                            message["data"], 
+                            message["data"],
                             ac_address.addressToList(message["id"]), 
                             [message["flag0"], message["flag1"], message["flag2"], message["hops"]]
                         )
@@ -491,6 +520,7 @@ class LoRa(object):
                 (list(header_to) == self._this_address or
                  list(header_to) == self.broadcastAddress or
                  self._receive_all):
+            msgTxt = self.decryptMessage(message)
             return {
                 "to": ac_address.addressLst2Str(list(header_to)),
                 "from": ac_address.addressLst2Str(list(header_from)),
@@ -505,6 +535,7 @@ class LoRa(object):
                 "flag2": header_flags[2],
                 "hops": header_flags[3],
                 "packet": packet,
+                "messageText": msgTxt,
             }
             '''
             return {

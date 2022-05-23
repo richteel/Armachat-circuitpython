@@ -17,8 +17,6 @@ class ui_screen(object):
         self.exit_keys = []
         self.lines = []
         self.line_index = 0
-        self.fs_rw = "??"
-        self.fs_rw_long = "??"
         self.editor = { 
             "action": "",
             "cursorPos": 0,
@@ -32,18 +30,14 @@ class ui_screen(object):
             "validationMsg2": "",
             }
         self.receiveTimeout = 0.1
+        self.currentMessageIdx = 0
 
-    '''
-    def _countMessages(self, msgStat=""):
-        if msgStat is None:
-            return 0
-        allMsg = len(self.vars.messages)
-        c = 0
-        for i in range(allMsg):
-            if self.vars.messages[i].count(msgStat) > 0:
-                c = c + 1
-        return c
-    '''
+        self.fs_rw = "RO"
+        self.fs_rw_long = "Read Only"
+        if config.fileSystemWriteMode():
+            self.fs_rw = "RW"
+            self.fs_rw_long = "Read Write"
+        self._showGC()
 
     def _countMessages(self, msgStat=""):
         if msgStat is None:
@@ -64,9 +58,10 @@ class ui_screen(object):
             "%myName%": config.myName,
             "%toAddress%": self.vars.address_book[self.vars.to_dest_idx]["address"],
             "%toName%": self.vars.address_book[self.vars.to_dest_idx]["name"],
-            "%countMessagesAll%": str(self._countMessages("")),
+            "%countMessagesAll%": str(len(self.vars.messages)),
             "%countMessagesNew%": str(self._countMessages("N")),
             "%countMessagesUndel%": str(self._countMessages("S")),
+            "%msgIdx1%": str(self.currentMessageIdx + 1) if len(self.vars.messages) > 0 else "0",
             "%region%": config.region,
             "%power%": str(config.power),
             "%profile%": str(config.loraProfile),
@@ -94,6 +89,15 @@ class ui_screen(object):
             "%len%": len(self.editor["text"]) - 1,
             "%keyLayout%": self.vars.keypad.keyLayout,
             "%action%": self.editor["action"],
+            
+            "%msgStatus%": self.vars.messages[self.currentMessageIdx]["status"] if len(self.vars.messages) > 0 else "",
+            "%msgTo%": self.vars.messages[self.currentMessageIdx]["to"] if len(self.vars.messages) > 0 else "",
+            "%msgFrom%": self.vars.messages[self.currentMessageIdx]["from"] if len(self.vars.messages) > 0 else "",
+            "%msgId%": self.vars.messages[self.currentMessageIdx]["id"] if len(self.vars.messages) > 0 else "",
+            "%msgHop%": self.vars.messages[self.currentMessageIdx]["hops"] if len(self.vars.messages) > 0 else "",
+            "%msgRssi%": self.vars.messages[self.currentMessageIdx]["rssi"] if len(self.vars.messages) > 0 else "",
+            "%msgSnr%": self.vars.messages[self.currentMessageIdx]["snr"] if len(self.vars.messages) > 0 else "",
+            "%msgTime%": self.vars.messages[self.currentMessageIdx]["timestamp"] if len(self.vars.messages) > 0 else "",
         }
 
     def _inc_lines(self, step):
@@ -128,13 +132,6 @@ class ui_screen(object):
         print("Free RAM: {:,}".format(gc.mem_free()))
     
     def _show_screen(self):
-        self._showGC()
-        self.fs_rw = "RO"
-        self.fs_rw_long = "Read Only"
-        if config.fileSystemWriteMode():
-            self.fs_rw = "RW"
-            self.fs_rw_long = "Read Write"
-
         screen_vars = self._get_vars()
         
         if self.line_index >= len(self.lines):
@@ -165,6 +162,7 @@ class ui_screen(object):
             else:
                 self.vars.display.screen[i].text = \
                     self._replace_var(self.lines[line].text, screen_vars)
+            gc.collect()
             
         self.vars.display.screen.show()
         self._showGC()
@@ -214,13 +212,13 @@ class ui_screen(object):
         # Navigation for small screens
         if keypress["key"] == "o":
             if self._inc_lines(-1 * self.vars.display.height_lines):
-                self._show_screen()
+                self.show_screen()
                 self.vars.sound.ring()
             else:
                 self.vars.sound.beep()
         elif keypress["key"] == "l":
             if self._inc_lines(self.vars.display.height_lines):
-                self._show_screen()
+                self.show_screen()
                 self.vars.sound.ring()
             else:
                 self.vars.sound.beep()
@@ -276,9 +274,17 @@ class ui_screen(object):
         if message is not None:
             self._showGC()
             self.vars.messages.append(message)
-            self._show_screen()
+            self.show_screen()
+            self.sendConfirmation(message)
             self.vars.sound.play_melody(config.melody)
             self._showGC()
+    
+    def sendConfirmation(self, message):
+        confirmationMessage = message.copy()
+        confirmationMessage["flag2"] = 33
+        confirmationMessage["to"] = message["from"]
+        confirmationMessage["data"] = self.vars.radio.encryptMessage("Confirmation")
+        self.vars.radio.sendMessage(confirmationMessage)
 
     def show(self):
         raise NotImplementedError
@@ -354,8 +360,11 @@ class ui_screen(object):
                         self.vars.sound.beep()
 
         # self.vars.keypad.keyLayout = self.vars.keypad.keyboards[self.vars.keypad.keyboard_current_idx]["layout"]
-        self._showGC()
     
+    def show_screen(self):
+        self._showGC()
+        self._show_screen()
+        self._showGC()    
     
     def textCenter(self, text, char_width):
         retText = (" " * int((char_width - len(text))/2)) + text

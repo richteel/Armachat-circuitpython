@@ -8,35 +8,36 @@ class ui_setup(ui_screen):
         ui_screen.__init__(self, ac_vars)
 
         self.exit_keys = []
-        lines26 = [
-            Line("Setup", SimpleTextDisplay.GREEN),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("Pg [ENT]next [DEL]previous", SimpleTextDisplay.WHITE),
-            Line("[ALT] to exit", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
-        ]
-        lines20 = [
-            Line("Setup", SimpleTextDisplay.GREEN),
-            Line("Scroll [L]dwn  [O]up", SimpleTextDisplay.WHITE),
-            Line("Pg [ENT]nxt [DEL]pre", SimpleTextDisplay.WHITE),
-            Line("[ALT] to exit", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("", SimpleTextDisplay.WHITE),
-            Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
-        ]
-        self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
+                Line("Setup", SimpleTextDisplay.GREEN),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("Pg [ENT]next [DEL]previous", SimpleTextDisplay.WHITE),
+                Line("[ALT] to exit", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
+            ]
+        else:
+            self.lines = [
+                Line("Setup", SimpleTextDisplay.GREEN),
+                Line("Scroll [L]dwn  [O]up", SimpleTextDisplay.WHITE),
+                Line("Pg [ENT]nxt [DEL]pre", SimpleTextDisplay.WHITE),
+                Line("[ALT] to exit", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("", SimpleTextDisplay.WHITE),
+                Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
+            ]
         
     def show(self):
         self.line_index = 0
-        self._show_screen()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
         while True:
             self.receive()
@@ -57,7 +58,7 @@ class ui_setup(ui_screen):
                         if gui_setup_next.show() == None:
                             return None
                         self.line_index = 0
-                        self._show_screen()
+                        self.show_screen()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress

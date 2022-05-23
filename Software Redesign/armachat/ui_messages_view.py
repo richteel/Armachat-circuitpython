@@ -9,82 +9,74 @@ class ui_messages_view(ui_screen):
         ui_screen.__init__(self, ac_vars)
 
         self.exit_keys = []
-        lines26 = [
+        self.lines = []
+        self.visibleLines = self.vars.display.height_lines - 3
+
+        self.actionLine26 = Line("ALT-Ex Ent> Del< SPC-Detail", SimpleTextDisplay.RED)
+        self.actionLine20 = Line("Ent> Del< SPC-Detail", SimpleTextDisplay.GREEN)
+
+        self.scrollTopLine = 0
+        self.currentDisplayDetails = False
+        self.displayMessage()
+
+    def displayMessage(self):
+        self.currentDisplayDetails = False
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
             Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-            Line("0 Radio:", SimpleTextDisplay.GREEN),
-            Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
-            Line("[F] Frequency: %freq% MHz", SimpleTextDisplay.WHITE),
-            Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
-            Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
-            Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
-            Line("%profileName%", SimpleTextDisplay.WHITE),
-            Line("%profileDesc%", SimpleTextDisplay.WHITE),
-            Line("[ALT] Exit [Ent] > [Del] <", SimpleTextDisplay.RED)
-        ]
-        lines20 = [
-            Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-            Line("0 Radio:", SimpleTextDisplay.GREEN),
-            Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
-            Line("[F] Freq: %freq% MHz", SimpleTextDisplay.WHITE),
-            Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
-            Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
-            Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
-            Line("%profileName%", SimpleTextDisplay.WHITE),
-            Line("%profileDesc%", SimpleTextDisplay.WHITE),
-            Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
-        ]
-        self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
-
-    def getRegionIndex(self, region):
-        for r in range(len(config.regions)):
-            if config.regions[r]["region"] == region:
-                return r
+            Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+            ]
+        else:
+            self.lines = [
+                Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
+                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+            ]
         
-        return None
+        for i in range(0, self.visibleLines):
+            self.lines.append(Line("", SimpleTextDisplay.WHITE))
 
-    def _getNextBestProfile(self, step=1):
-        print("Entered _getNextBestProfile()")
-        region = config.getRegion()
-        profile = config.getProfile()
+        self.lines.append(self.actionLine26 if self.vars.display.width_chars >= 26 else self.actionLine20)
+        # TODO: Display message
 
-        if region is None or profile is None:
-            return
+        self.updateMessageDisplay()
+        self.show_screen()
 
-        regionBW = (region["freqEnd"] - region["freqStart"]) * 1000
-        profileBW = profile["bw"]
+    def displayDetails(self):
+        self.currentDisplayDetails = True
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
+                Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
+                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+                Line("Status: %msgStatus%", SimpleTextDisplay.WHITE),
+                Line("To: %msgTo%", SimpleTextDisplay.WHITE),
+                Line("From: %msgFrom%", SimpleTextDisplay.WHITE),
+                Line("MsgId: %msgId%", SimpleTextDisplay.WHITE),
+                Line("Hop: %msgHop%", SimpleTextDisplay.WHITE),
+                Line("RSSI: %msgRssi%   SNR: %msgSnr%", SimpleTextDisplay.WHITE),
+                Line("Time: %msgTime%", SimpleTextDisplay.WHITE),
+            ]
+        else:
+            self.lines = [
+                Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
+                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+                Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
+                Line("[F] Freq: %freq% MHz", SimpleTextDisplay.WHITE),
+                Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
+                Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
+                Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
+                Line("%profileName%", SimpleTextDisplay.WHITE),
+                Line("%profileDesc%", SimpleTextDisplay.WHITE),
+                Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
+            ]
 
-        print("config.region -> ", config.region)
-        print("regionBW -> ", regionBW)
-        print("config.loraProfile -> ", config.loraProfile)
-        print("profileBW -> ", profileBW)
-
-
-        # while config.loraProfile > 0 and config.loraProfile < len(config.loraProfiles):
-        loopCount = 0
-        dirMult = 1
-        while profileBW > regionBW and loopCount < 2 * len(config.loraProfiles):
-            print("Entered _getNextBestProfile() loop")
-            nextVal = config.loraProfile + (dirMult * step)
-            if nextVal < 1 or nextVal > len(config.loraProfiles):
-                dirMult = dirMult * -1
-                nextVal = config.loraProfile + (dirMult * step)
-            
-            config.loraProfile = nextVal
-            profile = config.getProfile()
-            profileBW = profile["bw"]
-
-            print("config.region -> ", config.region)
-            print("regionBW -> ", regionBW)
-            print("config.loraProfile -> ", config.loraProfile)
-            print("profileBW -> ", profileBW)
-            print("loopCount -> ", loopCount)
-            
-            loopCount += 1
-
+        self.lines.append(self.actionLine26 if self.vars.display.width_chars >= 26 else self.actionLine20)
+        self.show_screen()
+        
         
     def show(self):
         self.line_index = 0
-        self._show_screen()
+        self.updateMessageDisplay()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:
@@ -101,91 +93,76 @@ class ui_messages_view(ui_screen):
                         self.vars.sound.ring()
                         return None
                     elif keypress["key"] == "ent":
-                        self.vars.sound.ring()
-                        gui_setup_next = ui_setup_id(self.vars)
-                        if gui_setup_next.show() == None:
-                            return None
-                        self.line_index = 0
-                        self._show_screen()
+                        if self.currentMessageIdx + 1 < len(self.vars.messages):
+                            self.currentMessageIdx += 1
+                            self.vars.sound.ring()
+                            self.line_index = 0
+                            self.scrollTopLine = 0
+                            self.displayMessage()
+                        else:
+                            self.vars.sound.beep()
                     elif keypress["key"] == "bsp":
-                        self.vars.sound.ring()
-                        return keypress
-                    elif keypress["key"] == "f":
-                        preval = config.freq
-                        config.setFreqToCenterOfChannel()
-                        channelWidth = config.getChannelWidth()
-
-                        if keypress["longPress"]:
-                            config.freq = config.freq - channelWidth
+                        if self.currentMessageIdx - 1 >= 0:
+                            self.currentMessageIdx -= 1
+                            self.vars.sound.ring()
+                            self.line_index = 0
+                            self.scrollTopLine = 0
+                            self.displayMessage()
                         else:
-                            config.freq = config.freq + channelWidth
-                        config.validateSetting("freq")
-                        if preval != config.freq:
-                            config.writeConfig()
-                            vars.radioInit()
+                            self.vars.sound.beep()
+                    elif keypress["key"] == " ":
+                        if len(self.vars.messages) > 0:
+                            self.vars.sound.ring()
+                            self.scrollTopLine = 0
+                            if self.currentDisplayDetails:
+                                self.displayMessage()
+                            else:
+                                self.displayDetails()
+                        else:
+                            self.vars.sound.beep()
+                    elif keypress["key"] == "O":
+                        self.scrollTopLine -= 1
+                        if self.updateMessageDisplay():
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
-                        self._show_screen()
-                    elif keypress["key"] == "p":
-                        preval = config.power
-                        if keypress["longPress"]:
-                            config.power = self.changeValInt(config.power, 5, 23 , -1)
-                        else:
-                            config.power = self.changeValInt(config.power, 5, 23)
-                        config.validateSetting("power")
-                        if preval != config.power:
-                            config.writeConfig()
-                            vars.radioInit()
+                    elif keypress["key"] == "L":
+                        self.scrollTopLine += 1
+                        if self.updateMessageDisplay():
                             self.vars.sound.ring()
                         else:
                             self.vars.sound.beep()
-                        self._show_screen()
-                    elif keypress["key"] == "r":
-                        preval = config.region
-                        regionIdx = self.getRegionIndex(config.region)
-
-                        if keypress["longPress"]:
-                            if regionIdx > 0:
-                                config.region = config.regions[regionIdx - 1]["region"]
-                                self._getNextBestProfile(-1)
-                        else:
-                            if regionIdx + 1 < len(config.regions):
-                                config.region = config.regions[regionIdx + 1]["region"]
-                                self._getNextBestProfile(1)
-                        
-                        config.validateAllSettings()
-                        if preval != config.region:
-                            config.setFreqToCenterFreq()
-                            config.setFreqToCenterOfChannel()
-                            config.writeConfig()
-                            vars.radioInit()
-                            self.vars.sound.ring()
-                        else:
-                            self.vars.sound.beep()
-                        self._show_screen()
-                    elif keypress["key"] == "s":
-                        preval = config.loraProfile
-                        step = 1
-                        if keypress["longPress"]:
-                            config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles) , -1)
-                            self._getNextBestProfile(-1)
-                        else:
-                            config.loraProfile = self.changeValInt(config.loraProfile, 1, len(config.loraProfiles))
-                            self._getNextBestProfile(1)
-                        
-                        config.validateAllSettings()
-                        if preval != config.loraProfile:
-                            config.setFreqToCenterFreq()
-                            config.setFreqToCenterOfChannel()
-                            config.writeConfig()
-                            vars.radioInit()
-                            self.vars.sound.ring()
-                        else:
-                            self.vars.sound.beep()
-                        self._show_screen()
                     elif keypress["key"] in self.exit_keys:
                         self.vars.sound.ring()
                         return keypress
                     else:
                         self.vars.sound.beep()
+
+    def updateMessageDisplay(self):
+        # CHECK: If no messages return
+        if len(self.vars.messages) == 0:
+            return False
+        # CHECK: If top line is less than zero, set to zero and exit
+        if self.scrollTopLine < 0:
+            self.scrollTopLine = 0
+            return False
+        
+        # Split message into lines
+        displayLines = self.vars.messages[self.currentMessageIdx]["messageText"].splitlines()
+        # CHECK: If done no further scrolling, exit
+        if self.scrollTopLine > 0 and self.scrollTopLine > len(displayLines) - self.visibleLines:
+            self.scrollTopLine = len(displayLines) - self.visibleLines
+            if self.scrollTopLine < 0:
+                self.scrollTopLine = 0
+            return False
+
+        # Display the message
+        for i in range(self.visibleLines):
+            lineIndex = self.scrollTopLine + i
+            if lineIndex >= len(displayLines):
+                self.lines[2 + i] = Line("", SimpleTextDisplay.WHITE)
+            else:
+                self.lines[2 + i] = Line(displayLines[lineIndex], SimpleTextDisplay.WHITE)
+        
+        return True
+        

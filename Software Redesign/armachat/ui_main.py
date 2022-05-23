@@ -11,31 +11,32 @@ class ui_main(ui_screen):
         ui_screen.__init__(self, ac_vars)
         
         self.exit_keys = ['m', 'i', 'p', 's']
-        lines26 = [
-            Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-            Line(">(%myAddress%)%myName%", SimpleTextDisplay.GREEN),
-            Line("[N] New message", SimpleTextDisplay.WHITE),
-            Line("[D] To:(%toAddress%)%toName%", SimpleTextDisplay.WHITE),
-            Line("[M] Messages > ALL:%countMessagesAll%", SimpleTextDisplay.WHITE),
-            Line("New:%countMessagesNew% Undelivered:%countMessagesUndel%", SimpleTextDisplay.WHITE),
-            Line("[ ]          [I] HW Info", SimpleTextDisplay.WHITE),
-            Line("[R] Reset    [P] Ping", SimpleTextDisplay.WHITE),
-            Line("[T] Terminal [S] Setup", SimpleTextDisplay.WHITE),
-            Line("Ready ...", SimpleTextDisplay.RED)
-        ]
-        lines20 = [
-            Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-            Line(">(%myAddress%)%myName%", SimpleTextDisplay.GREEN),
-            Line("[N] New message", SimpleTextDisplay.WHITE),
-            Line("[D] To:%to_name%", SimpleTextDisplay.WHITE),
-            Line("[M] Messages>A:%countMessages_all%", SimpleTextDisplay.WHITE),
-            Line("New:%countMessages_new% Undeliv:%countMessages_undel%", SimpleTextDisplay.WHITE),
-            Line("[ ]       [I] HW Inf", SimpleTextDisplay.WHITE),
-            Line("[R] Reset [P] Ping", SimpleTextDisplay.WHITE),
-            Line("[T] Term  [S] Setup", SimpleTextDisplay.WHITE),
-            Line("Ready ...", SimpleTextDisplay.RED)
-        ]
-        self.lines = lines26 if self.vars.display.width_chars >= 26 else lines20
+        if self.vars.display.width_chars >= 26:
+            self.lines = [
+                Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
+                Line(">(%myAddress%)%myName%", SimpleTextDisplay.GREEN),
+                Line("[N] New message", SimpleTextDisplay.WHITE),
+                Line("[D] To:(%toAddress%)%toName%", SimpleTextDisplay.WHITE),
+                Line("[M] Messages > ALL:%countMessagesAll%", SimpleTextDisplay.WHITE),
+                Line("New:%countMessagesNew% Undelivered:%countMessagesUndel%", SimpleTextDisplay.WHITE),
+                Line("[ ]          [I] HW Info", SimpleTextDisplay.WHITE),
+                Line("[ ]          [P] Ping", SimpleTextDisplay.WHITE),
+                Line("[T] Terminal [S] Setup", SimpleTextDisplay.WHITE),
+                Line("Ready ...", SimpleTextDisplay.RED)
+            ]
+        else:
+            self.lines = [
+                Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
+                Line(">(%myAddress%)%myName%", SimpleTextDisplay.GREEN),
+                Line("[N] New message", SimpleTextDisplay.WHITE),
+                Line("[D] To:%to_name%", SimpleTextDisplay.WHITE),
+                Line("[M] Messages>A:%countMessages_all%", SimpleTextDisplay.WHITE),
+                Line("New:%countMessages_new% Undeliv:%countMessages_undel%", SimpleTextDisplay.WHITE),
+                Line("[ ]       [I] HW Inf", SimpleTextDisplay.WHITE),
+                Line("[ ]       [P] Ping", SimpleTextDisplay.WHITE),
+                Line("[T] Term  [S] Setup", SimpleTextDisplay.WHITE),
+                Line("Ready ...", SimpleTextDisplay.RED)
+            ]
 
     def getFlags(self, f3=0, f2=0, status=0, hopLimit=config.hopLimit):
         assert isinstance(f3, int), "ERROR: getFlags - f3 is not an int"
@@ -74,7 +75,7 @@ class ui_main(ui_screen):
 
     def show(self):
         self.line_index = 0
-        self._show_screen()
+        self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
         while True:
@@ -109,6 +110,7 @@ class ui_main(ui_screen):
                         if result is not None:
                             print("New Message -> ", result)
                             toAddress = self.vars.address_book[self.vars.to_dest_idx]["address"]
+                            data = self.vars.radio.encryptMessage(result)
                             message = {
                                         "to": toAddress,
                                         "from": config.myAddress,
@@ -117,16 +119,17 @@ class ui_main(ui_screen):
                                         "rssi": None,
                                         "snr": None,
                                         "timestamp": self.getTimeStamp(),
-                                        "data": result,
+                                        "data": data,
                                         "flag0" : 0,
                                         "flag1" : 0,
                                         "flag2" : 0,
                                         "hops": config.hopLimit,
+                                        "messageText": result,
                                       }
                             self.vars.messages.append(message)
                             self.vars.radio.sendMessage(message)
-                    elif keypress["key"] == "r":
-                        supervisor.reload()
+                    # elif keypress["key"] == "r":
+                    #    supervisor.reload()
                     elif keypress["key"] == "t":
                         self.vars.sound.ring()
                         self.vars.display.screen.show_terminal()
@@ -141,4 +144,4 @@ class ui_main(ui_screen):
                     else:
                         self.vars.sound.beep()
                     
-                    self._show_screen()
+                    self.show_screen()
