@@ -31,6 +31,7 @@ class ui_screen(object):
             }
         self.receiveTimeout = 0.1
         self.currentMessageIdx = 0
+        self.visibleLines = self.vars.display.height_lines - 3
 
         self.fs_rw = "RO"
         self.fs_rw_long = "Read Only"
@@ -271,7 +272,16 @@ class ui_screen(object):
     def receive(self):
         message = self.vars.radio.receive(timeout=self.receiveTimeout)
 
-        if message is not None:
+        if message is not None and message["flag2"] == 33:
+            self._showGC()
+            for i in range(len(self.vars.messages)):
+                if self.vars.messages[i]["id"] == message["id"] and self.vars.messages[i]["status"] == "S":
+                    self.vars.messages[i]["status"] = "D"
+                    break
+
+            self.show_screen()
+            self._showGC()
+        elif message is not None:
             self._showGC()
             self.vars.messages.append(message)
             self.show_screen()
@@ -293,6 +303,8 @@ class ui_screen(object):
         self._showGC()
         font_width, font_height = terminalio.FONT.get_bounding_box()
         font_scale = 2
+        if self.visibleLines < 5:
+            font_scale = 1
         char_width = self.vars.display.display.width/(font_width * font_scale) - 2
         startX = (font_width * font_scale)
         startY = int((self.vars.display.display.height - (font_height * 3))/2)

@@ -9,7 +9,6 @@ class ui_editor(ui_screen):
 
         self.exit_keys = []
         self.lines = []
-        self.visibleLines = self.vars.display.height_lines - 3
 
         if self.vars.display.width_chars >= 26:
             self.lines = [

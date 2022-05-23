@@ -46,7 +46,7 @@ class ui_splash(ui_screen):
             text_area2.y = font_height * 3
 
             text3 = "Free RAM:" + str(gc.mem_free()) + " Loading ..."
-            padding = " " * int((char_width - len(text2)))
+            padding = " " * int((char_width - len(text3))/2)
             text_area3 = label.Label(
                 terminalio.FONT, text=text3 + padding + " ", scale=font_scale, background_tight=False, background_color=0x0000FF, color=0xFFFFFF
             )
@@ -69,6 +69,16 @@ class ui_splash(ui_screen):
                                         bitmap=displayio.Bitmap,
                                         palette=displayio.Palette)
 
+            font_scale = 1
+            char_width = self.vars.display.display.width/(font_width * font_scale)
+            text3 = "Free RAM:" + str(gc.mem_free()) + " Loading ..."
+            padding = " " * int((char_width - len(text3))/2)
+            text_area3 = label.Label(
+                terminalio.FONT, text=text3 + padding + " ", scale=font_scale, background_tight=False, background_color=0x0000FF, color=0xFFFFFF
+            )
+            text_area3.x = 0
+            text_area3.y = self.vars.display.display.height - int(font_height/2)
+
             tile_grid = displayio.TileGrid(logo,
                                     pixel_shader=pallet)
 
@@ -76,6 +86,7 @@ class ui_splash(ui_screen):
             tile_grid.y = int(self.vars.display.display.height/2 - logo.height/2)
             
             splash.append(tile_grid)
+            splash.append(text_area3)
 
 
 

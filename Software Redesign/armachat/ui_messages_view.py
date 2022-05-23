@@ -54,19 +54,20 @@ class ui_messages_view(ui_screen):
                 Line("Hop: %msgHop%", SimpleTextDisplay.WHITE),
                 Line("RSSI: %msgRssi%   SNR: %msgSnr%", SimpleTextDisplay.WHITE),
                 Line("Time: %msgTime%", SimpleTextDisplay.WHITE),
+                Line("ALT-Ex Ent> Del< SPC-Detail", SimpleTextDisplay.RED)
             ]
         else:
             self.lines = [
                 Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
                 Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
-                Line("[R] Region: %region%", SimpleTextDisplay.WHITE),
-                Line("[F] Freq: %freq% MHz", SimpleTextDisplay.WHITE),
-                Line("    Channel: %channel%", SimpleTextDisplay.WHITE),
-                Line("[P] Power: %power%", SimpleTextDisplay.WHITE),
-                Line("[S] Profile: %profile%", SimpleTextDisplay.WHITE),
-                Line("%profileName%", SimpleTextDisplay.WHITE),
-                Line("%profileDesc%", SimpleTextDisplay.WHITE),
-                Line("ALT-Ex [ENT]> [DEL]<", SimpleTextDisplay.RED)
+                Line("Status: %msgStatus%", SimpleTextDisplay.WHITE),
+                Line("To: %msgTo%", SimpleTextDisplay.WHITE),
+                Line("From: %msgFrom%", SimpleTextDisplay.WHITE),
+                Line("MsgId: %msgId%", SimpleTextDisplay.WHITE),
+                Line("Hop: %msgHop%", SimpleTextDisplay.WHITE),
+                Line("RSSI: %msgRssi%   SNR: %msgSnr%", SimpleTextDisplay.WHITE),
+                Line("Time: %msgTime%", SimpleTextDisplay.WHITE),
+                Line("Ent> Del< SPC-Detail", SimpleTextDisplay.RED)
             ]
 
         self.lines.append(self.actionLine26 if self.vars.display.width_chars >= 26 else self.actionLine20)
