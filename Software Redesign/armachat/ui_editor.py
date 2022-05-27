@@ -1,4 +1,5 @@
 import re
+import time
 from armachat.ui_screen import Line as Line
 from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
@@ -95,15 +96,24 @@ class ui_editor(ui_screen):
         self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
+        lastTime = time.monotonic()
         while True:
             self.receive()
+
+            tTime = time.monotonic() - lastTime
+            if tTime > 0.1:
+                print("Time -> ", tTime)
+            lastTime = time.monotonic()
+
             keypress = self.vars.keypad.get_key()
+
+
             if self.vars.display.sleepUpdate(keypress):
                 continue
 
             if keypress is not None:
                 useXY = False
-                self._showGC()
+                self._gc()
                 if keypress["key"] == "alt":
                     if keypress["longPress"]:
                         self.vars.keypad.keyLayoutLocked = not self.vars.keypad.keyLayoutLocked
@@ -127,7 +137,7 @@ class ui_editor(ui_screen):
                     self.moveCursor(1, 0)
                     useXY = True
                 elif keypress["key"] == "ent":
-                    self.vars.sound.ring()
+                    # self.vars.sound.ring()
                     confResult = self.showConfirmation()
                     
                     if confResult == "Y":
@@ -142,7 +152,7 @@ class ui_editor(ui_screen):
                 
                 self.updateDisplay(useXY)
                 self.show_screen()
-                self.vars.sound.ring()
+                # self.vars.sound.ring()
 
     def updateDisplay(self, useXY = False):
         displayLines = self.editor["text"].splitlines()

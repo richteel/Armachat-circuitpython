@@ -3,7 +3,6 @@ from armachat.ui_screen import ui_screen as ui_screen
 from adafruit_simple_text_display import SimpleTextDisplay
 from armachat.ui_editor import ui_editor as ui_editor
 from armachat import config
-import supervisor
 import random
 
 class ui_main(ui_screen):
@@ -85,7 +84,7 @@ class ui_main(ui_screen):
                 continue
 
             if keypress is not None:
-                self._showGC()
+                self._gc()
                 # O, L, Q, A, B, V
                 if not self.checkKeys(keypress):
                     if keypress["key"] == "d":

@@ -10,6 +10,7 @@ from armachat import config
 from armachat import hw
 
 Line = namedtuple('Line', ['text', 'color'])
+debug = False
 
 class ui_screen(object):
     def __init__(self, ac_vars):
@@ -38,7 +39,8 @@ class ui_screen(object):
         if config.fileSystemWriteMode():
             self.fs_rw = "RW"
             self.fs_rw_long = "Read Write"
-        self._showGC()
+        self._gc()
+        self.lastReceive = time.monotonic()
 
     def _countMessages(self, msgStat=""):
         if msgStat is None:
@@ -48,6 +50,14 @@ class ui_screen(object):
             if len(msgStat) == 0 or self.vars.messages[i]["status"] == msgStat:
                 c = c + 1
         return c
+
+    def _gc(self):
+        if debug:
+            print("Free RAM: {:,}".format(gc.mem_free()))
+        gc.collect()
+        if debug:
+            print("gc.collect()")
+            print("Free RAM: {:,}".format(gc.mem_free()))
     
     def _get_vars(self):
         return {
@@ -125,12 +135,6 @@ class ui_screen(object):
             txt = txt.replace(key, str(value))
 
         return txt
-
-    def _showGC(self):
-        print("Free RAM: {:,}".format(gc.mem_free()))
-        gc.collect()
-        print("gc.collect()")
-        print("Free RAM: {:,}".format(gc.mem_free()))
     
     def _show_screen(self):
         screen_vars = self._get_vars()
@@ -166,7 +170,7 @@ class ui_screen(object):
             gc.collect()
             
         self.vars.display.screen.show()
-        self._showGC()
+        self._gc()
 
     def appendMessage(self, message):
         timeStamp = str(time.monotonic())
@@ -270,24 +274,29 @@ class ui_screen(object):
         return supervisor.runtime.usb_connected
 
     def receive(self):
+        if time.monotonic() - self.lastReceive < 1.0:
+            return
+        
+        self.lastReceive = time.monotonic()
+
         message = self.vars.radio.receive(timeout=self.receiveTimeout)
 
         if message is not None and message["flag2"] == 33:
-            self._showGC()
+            self._gc()
             for i in range(len(self.vars.messages)):
                 if self.vars.messages[i]["id"] == message["id"] and self.vars.messages[i]["status"] == "S":
                     self.vars.messages[i]["status"] = "D"
                     break
 
             self.show_screen()
-            self._showGC()
+            self._gc()
         elif message is not None:
-            self._showGC()
+            self._gc()
             self.vars.messages.append(message)
             self.show_screen()
             self.sendConfirmation(message)
             self.vars.sound.play_melody(config.melody)
-            self._showGC()
+            self._gc()
     
     def sendConfirmation(self, message):
         confirmationMessage = message.copy()
@@ -300,7 +309,7 @@ class ui_screen(object):
         raise NotImplementedError
 
     def showConfirmation(self, message="", okOnly = False, message2=""):
-        self._showGC()
+        self._gc()
         font_width, font_height = terminalio.FONT.get_bounding_box()
         font_scale = 2
         if self.visibleLines < 5:
@@ -355,7 +364,7 @@ class ui_screen(object):
                 continue
 
             if keypress is not None:
-                self._showGC()
+                self._gc()
                 # ent, bsp, or alt
                 if not self.checkKeys(keypress):
                     if keypress["key"] == "ent" or keypress["key"] == "rt" or keypress["key"] == "dn":
@@ -374,9 +383,9 @@ class ui_screen(object):
         # self.vars.keypad.keyLayout = self.vars.keypad.keyboards[self.vars.keypad.keyboard_current_idx]["layout"]
     
     def show_screen(self):
-        self._showGC()
+        self._gc()
         self._show_screen()
-        self._showGC()    
+        self._gc()    
     
     def textCenter(self, text, char_width):
         retText = (" " * int((char_width - len(text))/2)) + text

@@ -24,6 +24,7 @@ class ac_globals(object):
             config.myAddress, config.groupMask
         )
         broadcastAddress = ac_address.addressLst2Str(broadcastAddressList)
+        print("broadcastAddress -> ", broadcastAddress)
         # destinations = "Sammy|12-36-124-8|Tom|12-36-124-17|Sandy|12-36-124-3"
         parts = config.destinations.split("|")
         retVal = [{"name": "All", "address": broadcastAddress}]
