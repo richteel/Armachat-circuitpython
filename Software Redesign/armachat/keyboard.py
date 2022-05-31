@@ -46,7 +46,7 @@ class keyboard(object):
         LONG_PRESS_TIME = 0.5
         keys = self._keypad.pressed_keys
 
-        if not keys:
+        if len(keys) == 0:
             return None
 
         pressedTime = time.monotonic()
@@ -54,9 +54,11 @@ class keyboard(object):
         pressDuration = 0.0
         releasedTime = 0.0
 
-        while self._keypad.pressed_keys:
-            releasedTime = time.monotonic()
-            pressDuration = releasedTime - pressedTime
+        while len(self._keypad.pressed_keys) > 0:
+            pass
+
+        releasedTime = time.monotonic()
+        pressDuration = releasedTime - pressedTime
 
         longPress = False
 

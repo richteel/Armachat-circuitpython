@@ -3,6 +3,7 @@ import supervisor
 import displayio
 import terminalio
 import time
+import re
 from adafruit_display_text import label
 from collections import namedtuple
 from adafruit_simple_text_display import SimpleTextDisplay
@@ -10,11 +11,11 @@ from armachat import config
 from armachat import hw
 
 Line = namedtuple('Line', ['text', 'color'])
-debug = False
 
 class ui_screen(object):
     def __init__(self, ac_vars):
         self.vars = ac_vars
+        self.debug = False
         self.exit_keys = []
         self.lines = []
         self.line_index = 0
@@ -51,66 +52,22 @@ class ui_screen(object):
                 c = c + 1
         return c
 
+    def _findall(self, pattern, string):
+        while True:
+            match = re.search(pattern, string)
+            if not match:
+                break
+            yield match.group(0)
+            string = string[match.end():]
+
     def _gc(self):
-        if debug:
+        if self.debug:
             print("Free RAM: {:,}".format(gc.mem_free()))
         gc.collect()
-        if debug:
+        if self.debug:
             print("gc.collect()")
             print("Free RAM: {:,}".format(gc.mem_free()))
     
-    def _get_vars(self):
-        return {
-            "%freq%": "{:5.2f}".format(config.freq),
-            "%channel%": str(config.getChannel()),
-            "%RW%": self.fs_rw,
-            "%RWlong%": self.fs_rw_long,
-            "%myAddress%": str(config.myAddress),
-            "%myName%": config.myName,
-            "%toAddress%": self.vars.address_book[self.vars.to_dest_idx]["address"],
-            "%toName%": self.vars.address_book[self.vars.to_dest_idx]["name"],
-            "%countMessagesAll%": str(len(self.vars.messages)),
-            "%countMessagesNew%": str(self._countMessages("N")),
-            "%countMessagesUndel%": str(self._countMessages("S")),
-            "%msgIdx1%": str(self.currentMessageIdx + 1) if len(self.vars.messages) > 0 else "0",
-            "%region%": config.region,
-            "%power%": str(config.power),
-            "%profile%": str(config.loraProfile),
-            "%profileName%": config.loraProfiles[config.loraProfile - 1]["modemPresetConfig"],
-            "%profileDesc%": config.loraProfiles[config.loraProfile - 1]["modemPresetDescription"],
-            "%vsys%": "{:5.2f} V".format(hw.get_VSYSvoltage()),
-            "%usbConnected%": "USB power connected" if hw.VBUS_status.value else "No USB power",
-            "%diskSize%": "{:,.1f}".format(hw.get_DiskSpaceKb()),
-            "%freeSpace%": "{:,.1f}".format(hw.get_FreeSpaceKb()),
-            "%freeRam%": "{:,}".format(gc.mem_free()),
-            "%cpuTemp%": "{:.2f}".format(hw.get_CpuTempC()),
-            "%volume%": str(config.volume),
-            "%tone%": str(config.tone),
-            "%melodyIdx%": str(config.melody),
-            "%melodyName%": self.vars.sound.get_melodyName(config.melody),
-            "%melodyLenSecs%": self.vars.sound.get_melodyLength(config.melody),
-            "%bright%": config.bright,
-            "%sleep%": self.vars.display.get_sleepTime(),
-            "%font%": config.font,
-            "%theme%": config.theme,
-            "%locked%": "L" if self.vars.keypad.keyLayoutLocked else "U",
-            "%line%": self.editor["cursorPosY"],
-            "%col%": self.editor["cursorPosX"],
-            "%pos%": self.editor["cursorPos"],
-            "%len%": len(self.editor["text"]) - 1,
-            "%keyLayout%": self.vars.keypad.keyLayout,
-            "%action%": self.editor["action"],
-            
-            "%msgStatus%": self.vars.messages[self.currentMessageIdx]["status"] if len(self.vars.messages) > 0 else "",
-            "%msgTo%": self.vars.messages[self.currentMessageIdx]["to"] if len(self.vars.messages) > 0 else "",
-            "%msgFrom%": self.vars.messages[self.currentMessageIdx]["from"] if len(self.vars.messages) > 0 else "",
-            "%msgId%": self.vars.messages[self.currentMessageIdx]["id"] if len(self.vars.messages) > 0 else "",
-            "%msgHop%": self.vars.messages[self.currentMessageIdx]["hops"] if len(self.vars.messages) > 0 else "",
-            "%msgRssi%": self.vars.messages[self.currentMessageIdx]["rssi"] if len(self.vars.messages) > 0 else "",
-            "%msgSnr%": self.vars.messages[self.currentMessageIdx]["snr"] if len(self.vars.messages) > 0 else "",
-            "%msgTime%": self.vars.messages[self.currentMessageIdx]["timestamp"] if len(self.vars.messages) > 0 else "",
-        }
-
     def _inc_lines(self, step):
         if self.vars.display.height_lines >= len(self.lines):
             return False
@@ -130,14 +87,69 @@ class ui_screen(object):
 
     def _replace_var(self, text, screen_vars):
         txt = text
-
-        for key, value in screen_vars.items():
-            txt = txt.replace(key, str(value))
+        
+        for match in self._findall('\%(.+?)\%', txt):
+            try:
+                txt = txt.replace(match, str(screen_vars[match[1:-1]]))
+            except KeyError:
+                key = match[1:-1]
+                print(f"Missing key '{key}' in screen_vars")
 
         return txt
     
+    def _screen_vars(self):
+        return {
+            "action": self.editor["action"],
+            "bright": config.bright,
+            "channel": str(config.getChannel()),
+            "col": self.editor["cursorPosX"],
+            "countMessagesAll": str(len(self.vars.messages)),
+            "countMessagesNew": str(self._countMessages("N")),
+            "countMessagesUndel": str(self._countMessages("S")),
+            "cpuTemp": "{:.2f}".format(hw.get_CpuTempC()),
+            "diskSize": "{:,.1f}".format(hw.get_DiskSpaceKb()),
+            "font": config.font,
+            "freeSpace": "{:,.1f}".format(hw.get_FreeSpaceKb()),
+            "freeRam": "{:,}".format(gc.mem_free()),
+            "freq": "{:5.2f}".format(config.freq),
+            "keyLayout": self.vars.keypad.keyLayout,
+            "len": len(self.editor["text"]),
+            "locked": "L" if self.vars.keypad.keyLayoutLocked else "U",
+            "line": self.editor["cursorPosY"],
+            "melodyIdx": str(config.melody),
+            "melodyName": self.vars.sound.get_melodyName(config.melody),
+            "melodyLenSecs": self.vars.sound.get_melodyLength(config.melody),
+            "msgFrom": self.vars.messages[self.currentMessageIdx]["from"] if len(self.vars.messages) > 0 else "",
+            "msgHop": self.vars.messages[self.currentMessageIdx]["hops"] if len(self.vars.messages) > 0 else "",
+            "msgId": self.vars.messages[self.currentMessageIdx]["id"] if len(self.vars.messages) > 0 else "",
+            "msgIdx": str(self.currentMessageIdx + 1) if len(self.vars.messages) > 0 else "0",
+            "msgRssi": self.vars.messages[self.currentMessageIdx]["rssi"] if len(self.vars.messages) > 0 else "",
+            "msgSnr": self.vars.messages[self.currentMessageIdx]["snr"] if len(self.vars.messages) > 0 else "",
+            "msgStatus": self.vars.messages[self.currentMessageIdx]["status"] if len(self.vars.messages) > 0 else "",
+            "msgTime": self.vars.messages[self.currentMessageIdx]["timestamp"] if len(self.vars.messages) > 0 else "",
+            "msgTo": self.vars.messages[self.currentMessageIdx]["to"] if len(self.vars.messages) > 0 else "",
+            "myAddress": str(config.myAddress),
+            "myName": config.myName,
+            "pos": self.editor["cursorPos"],
+            "power": str(config.power),
+            "profile": str(config.loraProfile),
+            "profileName": config.loraProfiles[config.loraProfile - 1]["modemPresetConfig"],
+            "profileDesc": config.loraProfiles[config.loraProfile - 1]["modemPresetDescription"],
+            "region": config.region,
+            "RW": self.fs_rw,
+            "RWlong": self.fs_rw_long,
+            "sleep": self.vars.display.get_sleepTime(),
+            "theme": config.theme,
+            "toAddress": self.vars.address_book[self.vars.to_dest_idx]["address"],
+            "toName": self.vars.address_book[self.vars.to_dest_idx]["name"],
+            "tone": str(config.tone),
+            "usbConnected": "USB power connected" if hw.VBUS_status.value else "No USB power",
+            "volume": str(config.volume),
+            "vsys": "{:5.2f} V".format(hw.get_VSYSvoltage()),
+        }
+    
     def _show_screen(self):
-        screen_vars = self._get_vars()
+        screen_vars = self._screen_vars()
         
         if self.line_index >= len(self.lines):
             self.line_index = 0
@@ -212,7 +224,8 @@ class ui_screen(object):
     def checkKeys(self, keypress):
         handled = False
         
-        # print("keypress -> ", keypress)
+        if self.debug:
+            print("keypress -> ", keypress)
 
         # Navigation for small screens
         if keypress["key"] == "o":
@@ -274,14 +287,19 @@ class ui_screen(object):
         return supervisor.runtime.usb_connected
 
     def receive(self):
+        '''
         if time.monotonic() - self.lastReceive < 1.0:
             return
         
         self.lastReceive = time.monotonic()
+        '''
 
         message = self.vars.radio.receive(timeout=self.receiveTimeout)
 
-        if message is not None and message["flag2"] == 33:
+        if message is None:
+            return
+
+        if message["flag2"] == 33:
             self._gc()
             for i in range(len(self.vars.messages)):
                 if self.vars.messages[i]["id"] == message["id"] and self.vars.messages[i]["status"] == "S":
@@ -290,7 +308,7 @@ class ui_screen(object):
 
             self.show_screen()
             self._gc()
-        elif message is not None:
+        else:
             self._gc()
             self.vars.messages.append(message)
             self.show_screen()
@@ -299,9 +317,11 @@ class ui_screen(object):
             self._gc()
     
     def sendConfirmation(self, message):
+        msgto = message["to"]
         confirmationMessage = message.copy()
         confirmationMessage["flag2"] = 33
         confirmationMessage["to"] = message["from"]
+        message["from"] = msgto
         confirmationMessage["data"] = self.vars.radio.encryptMessage("Confirmation")
         self.vars.radio.sendMessage(confirmationMessage)
 

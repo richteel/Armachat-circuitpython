@@ -96,23 +96,38 @@ class ui_editor(ui_screen):
         self.show_screen()
         self.vars.display.sleepUpdate(None, True)
 
-        lastTime = time.monotonic()
+        showOverProcessTime = True
+        lastLoopTime = time.monotonic()
+        maxLoopTime = 0.3
+        lastProcessTime = time.monotonic()
+        maxProcessTime = 0.15
         while True:
+            if showOverProcessTime:
+                tTime = time.monotonic() - lastLoopTime
+                if tTime > maxLoopTime:
+                    print("Loop Time -> ", tTime)
+                lastLoopTime = time.monotonic()
+
+            lastProcessTime = time.monotonic()
             self.receive()
-
-            tTime = time.monotonic() - lastTime
-            if tTime > 0.1:
-                print("Time -> ", tTime)
-            lastTime = time.monotonic()
-
+            if showOverProcessTime:
+                tTime = time.monotonic() - lastProcessTime
+                if tTime > maxProcessTime:
+                    print("Receive Time -> ", tTime)
+            
+            lastProcessTime = time.monotonic()
             keypress = self.vars.keypad.get_key()
-
+            if showOverProcessTime:
+                tTime = time.monotonic() - lastProcessTime
+                if tTime > maxProcessTime:
+                    print("KeyPress Time -> ", tTime)
 
             if self.vars.display.sleepUpdate(keypress):
                 continue
 
             if keypress is not None:
                 useXY = False
+                
                 self._gc()
                 if keypress["key"] == "alt":
                     if keypress["longPress"]:
@@ -137,7 +152,7 @@ class ui_editor(ui_screen):
                     self.moveCursor(1, 0)
                     useXY = True
                 elif keypress["key"] == "ent":
-                    # self.vars.sound.ring()
+                    self.vars.sound.ring()
                     confResult = self.showConfirmation()
                     
                     if confResult == "Y":
@@ -150,8 +165,20 @@ class ui_editor(ui_screen):
                     if not self.vars.keypad.keyLayoutLocked:
                         self.vars.keypad.change_keyboardLayout(True)
                 
+                
+                lastProcessTime = time.monotonic()
                 self.updateDisplay(useXY)
+                if showOverProcessTime:
+                    tTime = time.monotonic() - lastProcessTime
+                    if tTime > maxProcessTime:
+                        print("Update Display Time -> ", tTime)
+                
+                lastProcessTime = time.monotonic()
                 self.show_screen()
+                if showOverProcessTime:
+                    tTime = time.monotonic() - lastProcessTime
+                    if tTime > maxProcessTime:
+                        print("Show Screen Time -> ", tTime)
                 # self.vars.sound.ring()
 
     def updateDisplay(self, useXY = False):

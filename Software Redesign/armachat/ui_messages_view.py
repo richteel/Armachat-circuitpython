@@ -24,12 +24,12 @@ class ui_messages_view(ui_screen):
         if self.vars.display.width_chars >= 26:
             self.lines = [
             Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-            Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+            Line("Message: %msgIdx% of %countMessagesAll%", SimpleTextDisplay.GREEN),
             ]
         else:
             self.lines = [
                 Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+                Line("Message: %msgIdx% of %countMessagesAll%", SimpleTextDisplay.GREEN),
             ]
         
         for i in range(0, self.visibleLines):
@@ -46,7 +46,7 @@ class ui_messages_view(ui_screen):
         if self.vars.display.width_chars >= 26:
             self.lines = [
                 Line("ARMACHAT %freq% MHz     %RW%", SimpleTextDisplay.WHITE),
-                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+                Line("Message: %msgIdx% of %countMessagesAll%", SimpleTextDisplay.GREEN),
                 Line("Status: %msgStatus%", SimpleTextDisplay.WHITE),
                 Line("To: %msgTo%", SimpleTextDisplay.WHITE),
                 Line("From: %msgFrom%", SimpleTextDisplay.WHITE),
@@ -59,7 +59,7 @@ class ui_messages_view(ui_screen):
         else:
             self.lines = [
                 Line("%freq% MHz        %RW%", SimpleTextDisplay.WHITE),
-                Line("Message: %msgIdx1% of %countMessagesAll%", SimpleTextDisplay.GREEN),
+                Line("Message: %msgIdx% of %countMessagesAll%", SimpleTextDisplay.GREEN),
                 Line("Status: %msgStatus%", SimpleTextDisplay.WHITE),
                 Line("To: %msgTo%", SimpleTextDisplay.WHITE),
                 Line("From: %msgFrom%", SimpleTextDisplay.WHITE),

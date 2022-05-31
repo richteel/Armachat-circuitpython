@@ -106,7 +106,7 @@ class ui_main(ui_screen):
                         gui_editor.editor["text"] = ""
                         
                         result = gui_editor.show()
-                        if result is not None:
+                        if result is not None and len(result) > 0:
                             print("New Message -> ", result)
                             toAddress = self.vars.address_book[self.vars.to_dest_idx]["address"]
                             data = self.vars.radio.encryptMessage(result)
@@ -127,6 +127,9 @@ class ui_main(ui_screen):
                                       }
                             self.vars.messages.append(message)
                             self.vars.radio.sendMessage(message)
+                        elif result is not None and len(result) == 0:
+                            self.showConfirmation(message="Blank Message", okOnly = True, message2="Not Sent")
+
                     # elif keypress["key"] == "r":
                     #    supervisor.reload()
                     elif keypress["key"] == "t":
